@@ -151,6 +151,24 @@ async function registrarComercialEnBackend(email, nombre, apellido, clientes) {
   }
 }
 
+// Busca si el mail ya está dado de alta en la solapa "comerciales" del
+// Sheet, aunque este navegador no tenga la cuenta guardada localmente.
+async function buscarComercialEnBackend(email) {
+  try {
+    var res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'buscarComercial', email: email })
+    });
+    var data = await res.json();
+    return data.ok ? data : null;
+  } catch (e) {
+    console.error('Error al buscar comercial:', e);
+    return null;
+  }
+}
+
 // Perfil Cliente eliminado: el flujo de carga de reclamos de clientes
 // ahora se realiza desde el Portal Comercial (botón "Cargar reclamo").
 var profiles = [
@@ -276,10 +294,28 @@ async function ingresarConCuentaExistente() {
 
   var guardados = getComercialesGuardados();
   var cuenta = guardados[email];
+
   if (!cuenta) {
-    cfErrors.general = 'No encontramos una cuenta con ese mail en este navegador. Si es tu primera vez, creá una cuenta.';
-    render();
-    return;
+    // No está guardada en ESTE navegador — antes de rechazarla, nos
+    // fijamos si ya existe en la solapa "comerciales" del Sheet (por ej.
+    // porque la creó desde otro dispositivo/navegador).
+    cfSubmitting = true; render();
+    var busqueda = await buscarComercialEnBackend(email);
+    if (!busqueda) {
+      cfSubmitting = false;
+      cfErrors.general = 'No pudimos validar tu acceso. Revisá tu conexión e intentá de nuevo.';
+      render();
+      return;
+    }
+    if (!busqueda.encontrado) {
+      cfSubmitting = false;
+      cfErrors.general = 'No encontramos una cuenta con ese mail. Si es tu primera vez, creá una cuenta.';
+      render();
+      return;
+    }
+    cuenta = { nombre: busqueda.nombre, apellido: busqueda.apellido, clientes: busqueda.clientes };
+    guardarComercial(email, cuenta.nombre, cuenta.apellido, cuenta.clientes);
+    cfSubmitting = false;
   }
 
   cfSubmitting = true; render();
