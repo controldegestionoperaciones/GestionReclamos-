@@ -155,8 +155,8 @@ tbody tr:hover td{background:var(--b50);cursor:pointer}
 
 <script>
 // =====================================================================
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyI0a4mu44U8HTbctuZaoIQDUhoJU5TYfSX_P3EkCpOH91MCpfeol4HhA22BrT3GMCF/exec';
-var GOOGLE_CLIENT_ID = '337424697739-d3mbqis7mpcao9r95imnfdq95uhboeur.apps.googleusercontent.com ';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJAgpnzn_Mh2If-riym1DjMUS-9NBwmt_toi3LqAaXH8r-dAfEzZsfHLe1Pt6h4IztMg/exec';
+var GOOGLE_CLIENT_ID = '337424697739-d3mbqis7mpcao9r95imnfdq95uhboeur.apps.googleusercontent.com';
 var ALLOWED_DOMAIN = 'ocasa.com';
 var MAIL_OPERACIONES = 'hania.achaval@ocasa.com';
 // =====================================================================
@@ -532,8 +532,9 @@ function renderTicketsView(filtered) {
           ${filtered.length === 0
             ? '<tr><td colspan="6" class="empty"><div style="font-size:36px;opacity:.4;margin-bottom:10px">🎫</div><p>No hay tickets</p></td></tr>'
             : filtered.map(function(t) {
-              return `<tr onclick="selectedTicket=${JSON.stringify(t).replace(/"/g,'&quot;')};detailComentario='';detailArchivo=null;renderPanel()">
-                <td><span class="tid">${t.ID||'—'}</span></td>
+              var tieneNuevo = t.comentario_no_leido_comercial === 'SI';
+              return `<tr onclick="abrirTicketComercial('${esc(t.ID)}')">
+                <td><span class="tid">${t.ID||'—'}</span>${tieneNuevo?' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">💬 Nuevo</span>':''}</td>
                 <td>${fmtDate(t.creado)}</td>
                 <td>${t.tipo_reclamo||'—'}</td>
                 <td style="font-size:11px">${esc(t.empresa||t.cliente||(t.email_cliente||'').split('@')[0]||'—')}</td>
@@ -566,8 +567,8 @@ function renderArchivadosView(archivados) {
             : archivados.map(function(t) {
               var info = {};
               try { info = typeof t.archivado_info === 'object' ? t.archivado_info : JSON.parse(t.archivado_info || '{}'); } catch(e) { info = {}; }
-              return `<tr onclick="selectedTicket=${JSON.stringify(t).replace(/"/g,'&quot;')};detailComentario='';detailArchivo=null;renderPanel()">
-                <td><span class="tid">${t.ID||'—'}</span></td>
+              return `<tr onclick="abrirTicketComercial('${esc(t.ID)}')">
+                <td><span class="tid">${t.ID||'—'}</span>${t.comentario_no_leido_comercial==='SI'?' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">💬 Nuevo</span>':''}</td>
                 <td style="font-size:11px">${esc(t.empresa||t.cliente||(t.email_cliente||'').split('@')[0]||'—')}</td>
                 <td>${t.tipo_reclamo||'—'}</td>
                 <td style="font-size:11px">${esc(info.solicitanteNombre||'—')}${info.solicitanteEmail?' ('+esc(info.solicitanteEmail)+')':''}</td>
@@ -581,6 +582,22 @@ function renderArchivadosView(archivados) {
       </table>
     </div>`;
 }
+
+// Abre el detalle de un ticket y, si tenía un comentario nuevo sin leer,
+// lo marca como leído (desaparece el aviso "💬 Nuevo" de la lista).
+window.abrirTicketComercial = function(id) {
+  var t = tickets.find(function(x){ return x.ID === id; });
+  if (!t) return;
+  selectedTicket = t;
+  detailComentario = '';
+  detailArchivo = null;
+  renderPanel();
+  if (t.comentario_no_leido_comercial === 'SI') {
+    t.comentario_no_leido_comercial = '';
+    render();
+    api({ action:'updateTicket', id:id, campos:{ comentario_no_leido_comercial:'' } }).catch(function(){});
+  }
+};
 
 function goToTickets() {
   activeView = 'tickets';
