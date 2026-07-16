@@ -109,7 +109,7 @@ tbody tr:hover td{background:var(--b50);cursor:pointer}
 <div class="toast-wrap" id="toasts"></div>
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyI0a4mu44U8HTbctuZaoIQDUhoJU5TYfSX_P3EkCpOH91MCpfeol4HhA22BrT3GMCF/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJAgpnzn_Mh2If-riym1DjMUS-9NBwmt_toi3LqAaXH8r-dAfEzZsfHLe1Pt6h4IztMg/exec';
 // ─────────────────────────────────────────────────────────────
 
 var _u=(function(){
@@ -136,8 +136,14 @@ var _u=(function(){
   var OPERACIONES_EMAIL_PERMITIDO='controldegestionoperaciones@ocasa.com';
   if(e.toLowerCase()!==OPERACIONES_EMAIL_PERMITIDO){
     sessionStorage.clear();
-    alert('Este panel de Operaciones está restringido a una cuenta autorizada. La cuenta con la que entraste no tiene acceso.');
-    window.location.href='index.html';
+    var divDenegado=document.createElement('div');
+    divDenegado.style.cssText='position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit';
+    divDenegado.innerHTML='<div style="background:#fff;max-width:380px;width:100%;border-radius:12px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.25)">'
+      + '<div style="font-size:14px;color:#111827;line-height:1.5;margin-bottom:20px">Este panel de Operaciones está restringido a una cuenta autorizada. La cuenta con la que entraste no tiene acceso.</div>'
+      + '<div style="display:flex;justify-content:flex-end"><button id="denied-ok-btn" style="background:#2563eb;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600">Entendido</button></div>'
+      + '</div>';
+    document.body.appendChild(divDenegado);
+    document.getElementById('denied-ok-btn').onclick=function(){ window.location.href='index.html'; };
     return null;
   }
   return{token:t,email:e,name:n};
@@ -492,7 +498,7 @@ function renderArchivadosOpSection(archivadosList){
                   var info={};
                   try{info=typeof t.archivado_info==='object'?t.archivado_info:JSON.parse(t.archivado_info||'{}');}catch(e){}
                   return`<tr onclick="openPanel('${esc(t.ID)}')">
-                    <td><span class="tid">${t.ID||'—'}</span></td>
+                    <td><span class="tid">${t.ID||'—'}</span>${t.comentario_no_leido_operaciones==='SI'?' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">💬 Nuevo</span>':''}</td>
                     <td>${esc(t.tipo_reclamo||'—')}</td>
                     <td><span style="background:var(--b50);color:var(--b700);font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px">${esc(t.empresa||'—')}</span></td>
                     <td><span class="badge ${bc(t.estado)}">${estadoLabel(t.estado)}</span></td>
@@ -679,7 +685,7 @@ function renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos){
                   var venc=vencimientoInfo(t);
                   var rowBg=venc&&venc.estado==='vencido'?'background:rgba(239,68,68,.04)':venc&&venc.estado==='riesgo'?'background:rgba(245,158,11,.04)':'';
                   return`<tr class="${leido?'row-read':'row-unread'}" style="${rowBg}" onclick="openPanel('${esc(t.ID)}')">
-                    <td><span class="tid">${t.ID||'—'}</span></td>
+                    <td><span class="tid">${t.ID||'—'}</span>${t.comentario_no_leido_operaciones==='SI'?' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">💬 Nuevo</span>':''}</td>
                     <td>${activeTab==='analisis'?fmtDateTimeMs(t.analisis_inicio_ts):fmtDate(t.creado)}</td>
                     <td>${esc(t.tipo_reclamo||'—')}</td>
                     <td><span style="background:var(--b50);color:var(--b700);font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px">${esc(t.empresa||'—')}</span></td>
@@ -701,6 +707,11 @@ window.openPanel=function(id){
   if(selTicket.leido!=='SI'){
     selTicket.leido='SI';
     api({action:'updateTicket',id:selTicket.ID,campos:{leido:'SI'}});
+    render();
+  }
+  if(selTicket.comentario_no_leido_operaciones==='SI'){
+    selTicket.comentario_no_leido_operaciones='';
+    api({action:'updateTicket',id:selTicket.ID,campos:{comentario_no_leido_operaciones:''}});
     render();
   }
   renderPanel();
