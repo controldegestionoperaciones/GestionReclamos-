@@ -84,7 +84,7 @@ tbody tr:hover td{background:var(--au50);cursor:pointer}
 <div class="toast-wrap" id="toasts"></div>
 
 <script>
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyI0a4mu44U8HTbctuZaoIQDUhoJU5TYfSX_P3EkCpOH91MCpfeol4HhA22BrT3GMCF/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJAgpnzn_Mh2If-riym1DjMUS-9NBwmt_toi3LqAaXH8r-dAfEzZsfHLe1Pt6h4IztMg/exec';
 
 // ── Auth ──────────────────────────────────────────────────────
 var currentUser = (function(){
@@ -309,7 +309,7 @@ function render() {
                 ? '<tr><td colspan="6" class="empty"><div style="font-size:36px;opacity:.4;margin-bottom:10px">🎫</div><p>No hay tickets</p></td></tr>'
                 : filtered.map(function(t){
                     return '<tr onclick="openPanel(\'' + esc(t.ID) + '\')">'
-                      + '<td><span class="tid">' + (t.ID||'—') + '</span></td>'
+                      + '<td><span class="tid">' + (t.ID||'—') + '</span>' + (t.comentario_no_leido_auditoria==='SI' ? ' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">💬 Nuevo</span>' : '') + '</td>'
                       + '<td>' + fmtDate(t.creado) + '</td>'
                       + '<td>' + esc(t.tipo_reclamo||'—') + '</td>'
                       + '<td style="font-size:11px">' + esc(t.empresa||t.titular||'—') + '</td>'
@@ -329,6 +329,11 @@ function render() {
 window.openPanel = function(id) {
   selectedTicket = tickets.find(function(x){ return x.ID===id; });
   if (!selectedTicket) return;
+  if (selectedTicket.comentario_no_leido_auditoria === 'SI') {
+    selectedTicket.comentario_no_leido_auditoria = '';
+    api({ action:'updateTicket', id:selectedTicket.ID, campos:{ comentario_no_leido_auditoria:'' } });
+    render();
+  }
   renderPanel();
 };
 
