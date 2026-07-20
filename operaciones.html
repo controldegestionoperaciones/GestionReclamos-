@@ -107,7 +107,41 @@ tbody tr:hover td{background:var(--b50);cursor:pointer}
 <body>
 <div id="app"></div>
 <div class="toast-wrap" id="toasts"></div>
-<script src="chart.umd.min.js"></script>
+<script>
+// Carga Chart.js probando varias fuentes en orden: primero el archivo
+// local (si está subido junto a este HTML), y si falla, dos CDNs
+// distintos como respaldo (por si alguno está bloqueado en la red pero
+// otro no). Si carga tarde (después del primer render), vuelve a pintar
+// la pantalla para que los gráficos aparezcan sin que haga falta
+// recargar la página a mano.
+(function(){
+  var fuentes=[
+    'chart.umd.min.js',
+    'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js',
+    'https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js'
+  ];
+  var i=0;
+  function probarSiguiente(){
+    if(i>=fuentes.length){
+      console.warn('No se pudo cargar Chart.js desde ninguna fuente:', fuentes);
+      return;
+    }
+    var s=document.createElement('script');
+    s.src=fuentes[i];
+    s.onload=function(){
+      console.log('Chart.js cargado desde:', fuentes[i]);
+      if(typeof render==='function' && typeof activeNav!=='undefined' && activeNav==='kpis') render();
+    };
+    s.onerror=function(){
+      console.warn('Falló cargar Chart.js desde:', fuentes[i]);
+      i++;
+      probarSiguiente();
+    };
+    document.head.appendChild(s);
+  }
+  probarSiguiente();
+})();
+</script>
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzGAewjnC8AZYQvhgoRGOwnSq2sGCElYyOLyDu_MbYFb9zXrt4WloDQBrWJ15v3ucK0xg/exec';
@@ -468,10 +502,10 @@ function render(){
       <div class="sb-logo"><div class="sb-icon">⚙️</div><div><h1>Plataforma de gestión</h1><p>Operaciones</p></div></div>
       <div class="sb-nav">
         <div class="sb-sec">Panel</div>
-        <div class="ni${activeNav==='tickets'?' on':''}" onclick="activeNav='tickets';render()">🎫 Ticketera</div>
-        <div class="ni${activeNav==='kpis'?' on':''}" onclick="activeNav='kpis';render()">📊 KPIs</div>
-        <div class="ni${activeNav==='clientes'?' on':''}" onclick="activeNav='clientes';render()">💼 Comerciales <span style="margin-left:auto;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:${clientes.filter(function(c){return!c.comercial_asignado;}).length?'var(--r100)':'var(--g100)'};color:${clientes.filter(function(c){return!c.comercial_asignado;}).length?'var(--r600)':'var(--g500)'}">${clientes.filter(function(c){return!c.comercial_asignado;}).length||''}</span></div>
-        <div class="ni${activeNav==='archivados'?' on':''}" onclick="activeNav='archivados';render()">📦 Archivados <span style="margin-left:auto;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:var(--g100);color:var(--g500)">${archivadosList.length||''}</span></div>
+        <div class="ni${activeNav==='tickets'?' on':''}" onclick="activeNav='tickets';render()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M2 9a3 3 0 1 0 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 11v2"/><path d="M13 17v2"/></svg> Ticketera</div>
+        <div class="ni${activeNav==='archivados'?' on':''}" onclick="activeNav='archivados';render()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg> Archivados <span style="margin-left:auto;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:var(--g100);color:var(--g500)">${archivadosList.length||''}</span></div>
+        <div class="ni${activeNav==='kpis'?' on':''}" onclick="activeNav='kpis';render()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> KPIs</div>
+        <div class="ni${activeNav==='clientes'?' on':''}" onclick="activeNav='clientes';render()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Comerciales <span style="margin-left:auto;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:${clientes.filter(function(c){return!c.comercial_asignado;}).length?'var(--r100)':'var(--g100)'};color:${clientes.filter(function(c){return!c.comercial_asignado;}).length?'var(--r600)':'var(--g500)'}">${clientes.filter(function(c){return!c.comercial_asignado;}).length||''}</span></div>
       </div>
       <div class="sb-foot">
         <div style="font-size:20px">👤</div>
@@ -800,10 +834,13 @@ function destroyKPICharts(){
 function initKPICharts(dataHorasMes,dataTicketsMes,dataPorCliente){
   destroyKPICharts();
   if (typeof Chart === 'undefined') {
-    // No se encontró/cargó chart.umd.min.js (por ej. si no está subido junto a este HTML en el repo)
+    // Todavía no cargó ninguna de las 3 fuentes de Chart.js (local + 2 CDNs).
+    // Puede ser que sigan cargando (red lenta) — si el archivo local está
+    // bien subido o algún CDN no está bloqueado, esto se corrige solo apenas
+    // termine de cargar, sin recargar la página.
     ['kpiChartHorasMes','kpiChartTicketsMes','kpiChartPorCliente'].forEach(function(id){
       var c=document.getElementById(id);
-      if(c) c.outerHTML='<p style="font-size:12px;color:var(--r500)">No se pudo cargar la librería de gráficos (chart.umd.min.js). Verificá que ese archivo esté subido en el mismo repositorio, junto a operaciones.html.</p>';
+      if(c) c.outerHTML='<p style="font-size:12px;color:var(--r500)">Cargando la librería de gráficos… si este mensaje no desaparece solo en unos segundos, revisá la consola del navegador (F12) para ver qué fuente falló.</p>';
     });
     return;
   }
