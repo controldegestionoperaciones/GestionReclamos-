@@ -441,18 +441,19 @@ function render(){
   var rec=getTab('recibidos'),ana=getTab('analisis'),fin=getTab('finalizados');
   var tab=activeTab==='recibidos'?rec:activeTab==='analisis'?ana:activeTab==='riesgo'?getEnRiesgoTickets():fin;
   var archivadosList=getArchivadosOp();
-  // Prom. horas cuenta CUALQUIER ticket que ya acumuló horas trabajadas en
-  // análisis y dejó de estar activo ahí (pasó a pendiente, a finalizado, o
-  // se archivó) — no solo los finalizados. El trabajo que hizo Operaciones
-  // vale igual sea cual sea el destino del ticket. Un ticket que sigue
-  // "En análisis" con el cronómetro corriendo todavía no entra (recién
-  // cuenta cuando se pausa).
-  var conHorasCerradas=tickets.filter(function(t){
-    var tieneHoras=parseFloat(t.analisis_segundos_acum)>0;
-    var cronometroActivo=t.estado==='En análisis' && parseFloat(t.analisis_inicio_ts)>0;
-    return tieneHoras && !cronometroActivo;
+  // Total horas trabajadas: suma las horas en análisis de TODOS los
+  // tickets (incluye archivados y los que siguen "En análisis" ahora
+  // mismo con el cronómetro corriendo) — el total de tiempo que
+  // Operaciones le dedicó a la ticketera en conjunto.
+  var totalHorasTrabajadas=tickets.reduce(function(s,t){return s+calcDias(t);},0);
+
+  // Prom. horas: solo cuenta tickets Finalizados y NO archivados — el
+  // promedio de tiempo que le lleva a Operaciones cerrar el análisis de
+  // un reclamo. Pendientes, en análisis y archivados quedan afuera.
+  var finalizadosParaProm=tickets.filter(function(t){
+    return t.estado==='Finalizado' && t.archivado!=='SI';
   });
-  var promDias=conHorasCerradas.length?Math.round(conHorasCerradas.reduce(function(s,t){return s+calcDias(t);},0)/conHorasCerradas.length):0;
+  var promDias=finalizadosParaProm.length?Math.round(finalizadosParaProm.reduce(function(s,t){return s+calcDias(t);},0)/finalizadosParaProm.length):0;
   var activos=tickets.filter(function(t){return t.archivado!=='SI';});
   var enRiesgo=activos.filter(function(t){var v=vencimientoInfo(t);return v&&(v.estado==='riesgo'||v.estado==='vencido');}).length;
   var vencidos=activos.filter(function(t){var v=vencimientoInfo(t);return v&&v.estado==='vencido';}).length;
@@ -476,7 +477,7 @@ function render(){
     <div class="main">
       <div class="topbar"><h2>${activeNav==='clientes'?'Gestión de Comerciales':activeNav==='archivados'?'Archivados':'Ticketera'}</h2></div>
       <div class="content">
-        ${activeNav==='clientes'?renderClientesSection():activeNav==='archivados'?renderArchivadosOpSection(archivadosList):renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos)}
+        ${activeNav==='clientes'?renderClientesSection():activeNav==='archivados'?renderArchivadosOpSection(archivadosList):renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos,totalHorasTrabajadas)}
       </div>
     </div>
   </div>`;
@@ -645,7 +646,7 @@ function renderFiltros(tipos,empresas){
   html+='</div>';
   return html;
 }
-function renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos){
+function renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos,totalHorasTrabajadas){
   var tipos=getOptipos();
   var empresas=getOpEmpresas();
   var totalActivos=rec.length+ana.length+fin.length;
@@ -664,6 +665,10 @@ function renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos){
           <div class="kpi" style="background:var(--p50,#faf5ff);border:1.5px solid var(--p300,#d8b4fe)">
             <div class="kl" style="color:var(--p600,#9333ea)">⏱ Prom. horas</div>
             <div class="kv" style="color:var(--p600,#9333ea)">${promDias}</div>
+          </div>
+          <div class="kpi" style="background:var(--p50,#faf5ff);border:1.5px solid var(--p300,#d8b4fe)">
+            <div class="kl" style="color:var(--p600,#9333ea)">🕐 Total horas</div>
+            <div class="kv" style="color:var(--p600,#9333ea)">${totalHorasTrabajadas}</div>
           </div>
         </div>
         <div class="tabs">
