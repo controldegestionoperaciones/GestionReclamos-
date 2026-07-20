@@ -123,6 +123,22 @@ window._S = {
 
 // ── HELPERS ──────────────────────────────────────
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// Ícono lineal (SVG, stroke=currentColor) para reemplazar los emojis.
+function ic(name,size){
+  size=size||14;
+  var attrs="width='"+size+"' height='"+size+"' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' style='vertical-align:-2px;flex-shrink:0'";
+  var p={
+    clipboard:"<rect x='6' y='4' width='12' height='16' rx='2'/><path d='M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1'/><path d='M9 10h6'/><path d='M9 14h6'/>",
+    wave:"<path d='M18 11V6a2 2 0 0 0-4 0v5'/><path d='M14 10V4a2 2 0 0 0-4 0v7'/><path d='M10 10.5V6a2 2 0 0 0-4 0v8'/><path d='M6 14v-1a2 2 0 0 0-4 0v3a8 8 0 0 0 8 8h3a8 8 0 0 0 8-8v-3a2 2 0 0 0-4 0v1'/>",
+    shield:"<path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z'/>",
+    check:"<path d='M20 6 9 17l-5-5'/>",
+    alert:"<path d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z'/><path d='M12 9v4'/><path d='M12 17h.01'/>",
+    table:"<rect x='3' y='4' width='18' height='16' rx='2'/><path d='M3 10h18'/><path d='M9 4v16'/>",
+    info:"<circle cx='12' cy='12' r='9'/><path d='M12 16v-4'/><path d='M12 8h.01'/>",
+    edit:"<path d='M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z'/>"
+  };
+  return "<svg "+attrs+">"+(p[name]||'')+"</svg>";
+}
 function fmtDate(d){if(!d)return'—';var p=d.split('-');return p.length<3?d:p[2]+'/'+p[1]+'/'+p[0];}
 
 async function api(body){
@@ -349,7 +365,7 @@ function render(){
 
 function topbar(){
   return`<div class="topbar">
-    <div class="brand"><div class="brand-icon">📋</div><div><h1>ReclamiOps</h1><p>Portal Cliente</p></div></div>
+    <div class="brand"><div class="brand-icon">${ic('clipboard',18)}</div><div><h1>ReclamiOps</h1><p>Portal Cliente</p></div></div>
     <div style="display:flex;align-items:center;gap:9px">
       <span style="font-size:12px;color:var(--g500)">${esc(_u.name)}</span>
       <button class="btn-sm" onclick="logout()">Salir</button>
@@ -361,17 +377,17 @@ function renderHome(app){
   app.innerHTML=`<div class="page">
     ${topbar()}
     <div class="form-card" style="max-width:680px">
-      <div style="font-size:19px;font-weight:600;color:var(--g900);margin-bottom:5px">Bienvenido/a 👋</div>
+      <div style="font-size:19px;font-weight:600;color:var(--g900);margin-bottom:5px">Bienvenido/a ${ic('wave',18)}</div>
       <div style="font-size:13px;color:var(--g500);margin-bottom:20px">¿Qué necesitás cargar hoy?</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <button onclick="goReclamo()" style="border:1.5px solid var(--g200);border-radius:var(--rad-lg);padding:20px 16px;cursor:pointer;text-align:left;background:var(--w);font-family:inherit;transition:all .13s" onmouseover="this.style.borderColor='var(--b500)';this.style.background='var(--b50)'" onmouseout="this.style.borderColor='var(--g200)';this.style.background='var(--w)'">
-          <div style="font-size:24px;margin-bottom:9px">📋</div>
+          <div style="font-size:24px;margin-bottom:9px">${ic('clipboard',24)}</div>
           <div style="font-size:13px;font-weight:600;color:var(--g900);margin-bottom:3px">Reclamo</div>
           <div style="font-size:12px;color:var(--g500)">Desconocimiento de consumo o no recepción de tarjeta</div>
         </button>
         <div style="border:1.5px solid var(--g200);border-radius:var(--rad-lg);padding:20px 16px;opacity:.45;position:relative">
           <div style="position:absolute;top:9px;right:9px;background:var(--g100);color:var(--g500);font-size:9px;font-weight:600;padding:2px 6px;border-radius:8px">Próximamente</div>
-          <div style="font-size:24px;margin-bottom:9px">🛡️</div>
+          <div style="font-size:24px;margin-bottom:9px">${ic('shield',24)}</div>
           <div style="font-size:13px;font-weight:600;color:var(--g900);margin-bottom:3px">Siniestro</div>
           <div style="font-size:12px;color:var(--g500)">Reportá un siniestro relacionado con la tarjeta</div>
         </div>
@@ -408,14 +424,14 @@ function renderForm(app){
 
   app.innerHTML=`<div class="page">
     <div class="topbar" style="max-width:640px">
-      <div class="brand"><div class="brand-icon">📋</div><div><h1>ReclamiOps</h1></div></div>
+      <div class="brand"><div class="brand-icon">${ic('clipboard',18)}</div><div><h1>ReclamiOps</h1></div></div>
       <button class="btn-sm" onclick="goHome()">← Inicio</button>
     </div>
     <div class="form-card">
       <div style="font-size:17px;font-weight:600;color:var(--g900);margin-bottom:4px">Nuevo Reclamo</div>
       <div style="font-size:12px;color:var(--g500);margin-bottom:20px">${_S.step===1?'Completá los datos.':'Revisá antes de enviar.'}</div>
       <div class="steps">
-        <div class="step ${_S.step>1?'done':'active'}"><div class="sn">${_S.step>1?'✓':'1'}</div><div class="sl">Datos</div></div>
+        <div class="step ${_S.step>1?'done':'active'}"><div class="sn">${_S.step>1?ic('check',12):'1'}</div><div class="sl">Datos</div></div>
         <div class="step ${_S.step===2?'active':''}"><div class="sn">2</div><div class="sl">Resumen</div></div>
       </div>
       ${_S.step===1?paso1(f,e,esDesc,esNoRec,esInd,esMas):paso2(resumen)}
@@ -426,7 +442,7 @@ function renderForm(app){
 function paso1(f,e,esDesc,esNoRec,esInd,esMas){
   var xlErrHtml='';
   if(_S.xlErrors.length>0){
-    xlErrHtml='<div class="xl-err-box"><p>⚠ Completá los siguientes campos en la planilla antes de continuar:</p><ul>'+
+    xlErrHtml='<div class="xl-err-box"><p>'+ic('alert',13)+' Completá los siguientes campos en la planilla antes de continuar:</p><ul>'+
       _S.xlErrors.map(function(x){return'<li>'+esc(x)+'</li>';}).join('')+'</ul></div>';
   }
 
@@ -488,14 +504,14 @@ function paso1(f,e,esDesc,esNoRec,esInd,esMas){
     <textarea id="f-detalle" placeholder="Describí brevemente lo sucedido...">${esc(f.detalle)}</textarea>
   </div>
   <div class="sec-t">Planilla de consumos</div>
-  <div class="al al-amber">⚠ Descargá la planilla, completala con los datos del reclamo y adjuntala antes de continuar.</div>
+  <div class="al al-amber">${ic('alert',13)} Descargá la planilla, completala con los datos del reclamo y adjuntala antes de continuar.</div>
   <div class="fg">
     <button class="dl-btn" style="font-size:13px;padding:9px 16px;background:var(--b600);color:#fff;border:none;border-radius:var(--rad);font-weight:600" onclick="dlB64(B64_CONSUMOS,'Planilla_Detalle_Consumos.xlsx')">⬇ Descargar planilla de consumos</button>
   </div>
   <div class="fg"><label>Adjuntar planilla completada <span class="req">*</span></label>
     <div class="upbox${_S.excelFile?' ok':''}" onclick="document.getElementById('xl-ind').click()">
       <input id="xl-ind" type="file" accept=".xlsx,.xls" style="display:none" onchange="setFile(this)">
-      <div style="font-size:18px;margin-bottom:4px">${_S.excelFile?'✅':'📊'}</div>
+      <div style="font-size:18px;margin-bottom:4px">${_S.excelFile?ic('check',18):ic('table',18)}</div>
       ${_S.excelFile?'<p class="ok-t">'+esc(_S.excelFile.name)+'</p>':'<p>Clic para adjuntar</p><p class="hint">.xlsx</p>'}
     </div>
     ${e.excel?'<p class="err">'+e.excel+'</p>':''}
@@ -509,12 +525,12 @@ function paso1(f,e,esDesc,esNoRec,esInd,esMas){
     <textarea id="f-detalle" placeholder="Describí brevemente lo sucedido...">${esc(f.detalle)}</textarea>
   </div>
   <div class="sec-t">Planilla requerida</div>
-  <div class="al al-amber">⚠ Descargá la planilla combinada (contiene "Detalle tarjetas" y "Detalle consumos"), completala y adjuntala. Las columnas marcadas son obligatorias.</div>
+  <div class="al al-amber">${ic('alert',13)} Descargá la planilla combinada (contiene "Detalle tarjetas" y "Detalle consumos"), completala y adjuntala. Las columnas marcadas son obligatorias.</div>
   <div class="fg"><button class="dl-btn" style="font-size:13px;padding:9px 16px;background:var(--b600);color:#fff;border:none;border-radius:var(--rad);font-weight:600" onclick="dlB64(B64_COMBINADO,'Planilla_Detalle_Consumos_y_Tarjetas.xlsx')">⬇ Descargar planilla combinada</button></div>
   <div class="fg"><label>Subir planilla completada <span class="req">*</span></label>
     <div class="upbox${_S.excelFile?' ok':''}" onclick="document.getElementById('xl-inp').click()">
       <input id="xl-inp" type="file" accept=".xlsx,.xls" style="display:none" onchange="setFile(this)">
-      <div style="font-size:18px;margin-bottom:4px">${_S.excelFile?'✅':'📊'}</div>
+      <div style="font-size:18px;margin-bottom:4px">${_S.excelFile?ic('check',18):ic('table',18)}</div>
       ${_S.excelFile?'<p class="ok-t">'+esc(_S.excelFile.name)+'</p>':'<p>Clic para adjuntar</p><p class="hint">.xlsx</p>'}
     </div>
     ${e.excel?'<p class="err">'+e.excel+'</p>':''}
@@ -573,12 +589,12 @@ function paso1(f,e,esDesc,esNoRec,esInd,esMas){
   <!-- ── NO RECEPCIÓN MASIVO ── -->
   ${esNoRec&&esMas?`
   <div class="sec-t" style="margin-top:4px">Planilla requerida</div>
-  <div class="al al-amber">⚠ Descargá la planilla "Detalle tarjetas", completala y adjuntala. Las columnas A, B, C y E son obligatorias.</div>
+  <div class="al al-amber">${ic('alert',13)} Descargá la planilla "Detalle tarjetas", completala y adjuntala. Las columnas A, B, C y E son obligatorias.</div>
   <div class="fg"><button class="dl-btn" style="font-size:13px;padding:9px 16px;background:var(--b600);color:#fff;border:none;border-radius:var(--rad);font-weight:600" onclick="dlB64(B64_TARJETAS,'Planilla_Detalle_Tarjetas.xlsx')">⬇ Descargar planilla de tarjetas</button></div>
   <div class="fg"><label>Subir planilla completada <span class="req">*</span></label>
     <div class="upbox${_S.excelFile?' ok':''}" onclick="document.getElementById('xl-inp2').click()">
       <input id="xl-inp2" type="file" accept=".xlsx,.xls" style="display:none" onchange="setFile(this)">
-      <div style="font-size:18px;margin-bottom:4px">${_S.excelFile?'✅':'📊'}</div>
+      <div style="font-size:18px;margin-bottom:4px">${_S.excelFile?ic('check',18):ic('table',18)}</div>
       ${_S.excelFile?'<p class="ok-t">'+esc(_S.excelFile.name)+'</p>':'<p>Clic para adjuntar</p><p class="hint">.xlsx</p>'}
     </div>
     ${e.excel?'<p class="err">'+e.excel+'</p>':''}
@@ -592,7 +608,7 @@ function paso1(f,e,esDesc,esNoRec,esInd,esMas){
 }
 
 function paso2(resumen){
-  return`<div class="al al-blue">ℹ Revisá los datos. Tocá ✏ para editar.</div>
+  return`<div class="al al-blue">${ic('info',13)} Revisá los datos. Tocá ${ic('edit',12)} para editar.</div>
   <div class="cbox">
     ${resumen.map(function(r){
       var isEd=_S.editField===r.key;
@@ -600,7 +616,7 @@ function paso2(resumen){
         <span class="ck">${r.label}</span>
         ${isEd?`<input style="flex:1;font-size:12px;padding:3px 7px;border:1px solid var(--b500);border-radius:5px;font-family:inherit;outline:none" value="${esc(r.value)}" autofocus onblur="saveEdit('${r.key}',this.value)" onkeydown="if(event.key==='Enter')saveEdit('${r.key}',this.value)">`
               :`<span class="cv">${esc(r.value)||'—'}</span>`}
-        ${!r.noEdit&&!isEd?`<button class="ebtn" onclick="startEdit('${r.key}')">✏</button>`:''}
+        ${!r.noEdit&&!isEd?`<button class="ebtn" onclick="startEdit('${r.key}')">${ic('edit',12)}</button>`:''}
       </div>`;
     }).join('')}
   </div>
@@ -615,7 +631,7 @@ function paso2(resumen){
 function renderOk(app){
   app.innerHTML=`<div class="page">
     <div class="form-card" style="text-align:center;padding:40px 30px">
-      <div style="font-size:44px;margin-bottom:12px">✅</div>
+      <div style="font-size:44px;margin-bottom:12px">${ic('check',40)}</div>
       <h2 style="font-size:18px;font-weight:600;color:var(--g900);margin-bottom:6px">¡Reclamo enviado!</h2>
       <p style="font-size:13px;color:var(--g500);margin-bottom:18px">El equipo comercial fue notificado.</p>
       <div class="ok-id">${_S.ticketId}</div>
