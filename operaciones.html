@@ -107,7 +107,7 @@ tbody tr:hover td{background:var(--b50);cursor:pointer}
 <body>
 <div id="app"></div>
 <div class="toast-wrap" id="toasts"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="chart.umd.min.js"></script>
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzGAewjnC8AZYQvhgoRGOwnSq2sGCElYyOLyDu_MbYFb9zXrt4WloDQBrWJ15v3ucK0xg/exec';
@@ -800,10 +800,10 @@ function destroyKPICharts(){
 function initKPICharts(dataHorasMes,dataTicketsMes,dataPorCliente){
   destroyKPICharts();
   if (typeof Chart === 'undefined') {
-    // El CDN de Chart.js no cargó (sin internet, bloqueado por la red, etc.)
+    // No se encontró/cargó chart.umd.min.js (por ej. si no está subido junto a este HTML en el repo)
     ['kpiChartHorasMes','kpiChartTicketsMes','kpiChartPorCliente'].forEach(function(id){
       var c=document.getElementById(id);
-      if(c) c.outerHTML='<p style="font-size:12px;color:var(--r500)">No se pudo cargar la librería de gráficos (Chart.js). Revisá la conexión a internet o si algo la está bloqueando, y recargá la página.</p>';
+      if(c) c.outerHTML='<p style="font-size:12px;color:var(--r500)">No se pudo cargar la librería de gráficos (chart.umd.min.js). Verificá que ese archivo esté subido en el mismo repositorio, junto a operaciones.html.</p>';
     });
     return;
   }
