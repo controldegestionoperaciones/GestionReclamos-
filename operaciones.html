@@ -561,21 +561,22 @@ function renderArchivadosOpSection(archivadosList){
         <p style="font-size:11px;color:var(--g400);margin-bottom:14px">Comercial los archivó — ya no están en las pestañas activas. El tiempo que se les dedicó sigue contando en "Prom. horas".</p>
         <div class="tw">
           <table>
-            <thead><tr><th>ID</th><th>Tipo</th><th>Cliente</th><th>Estado</th><th>Hs. en análisis</th><th>Archivado por</th><th>Fecha de archivado</th></tr></thead>
+            <thead><tr><th>ID</th><th>Tipo</th><th>Cliente</th><th>Estado</th><th>Hs. en análisis</th><th>Archivado por</th><th>Fecha de archivado</th><th></th></tr></thead>
             <tbody>
               ${archivadosList.length===0
-                ?'<tr><td colspan="7" class="empty">No hay tickets archivados</td></tr>'
+                ?'<tr><td colspan="8" class="empty">No hay tickets archivados</td></tr>'
                 :archivadosList.map(function(t){
                   var info={};
                   try{info=typeof t.archivado_info==='object'?t.archivado_info:JSON.parse(t.archivado_info||'{}');}catch(e){}
                   return`<tr onclick="openPanel('${esc(t.ID)}')">
-                    <td><span class="tid">${t.ID||'—'}</span>${t.comentario_no_leido_operaciones==='SI'?' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">'+ic('message',10)+' Nuevo</span>':''}</td>
+                    <td><span class="tid">${t.ID||'—'}</span></td>
                     <td>${esc(t.tipo_reclamo||'—')}</td>
                     <td><span style="background:var(--b50);color:var(--b700);font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px">${esc(t.empresa||'—')}</span></td>
                     <td><span class="badge ${bc(t.estado)}">${estadoLabel(t.estado)}</span></td>
                     <td><span class="db ${diasClass(calcDias(t))}">${calcDias(t)} hs</span></td>
                     <td style="font-size:11px">${esc(info.solicitanteNombre||'—')}</td>
                     <td style="font-size:11px">${esc(info.fecha||'—')}</td>
+                    <td style="text-align:right">${t.comentario_no_leido_operaciones==='SI'?'<span title="Comentario nuevo sin leer" style="display:inline-flex;align-items:center;gap:4px;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap">'+ic('message',10)+' Nuevo</span>':''}</td>
                   </tr>`;
                 }).join('')}
             </tbody>
@@ -926,23 +927,24 @@ function renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos,totalHo
         ${activeTab==='analisis'?'<p style="font-size:11px;color:var(--g400);margin-bottom:8px">Ordenados por los que entraron a análisis más recientemente primero.</p>':''}
         <div class="tw">
           <table>
-            <thead><tr><th>ID</th>${activeTab==='analisis'?thSort('analisis_inicio_ts','Entró a análisis'):thSort('creado','Fecha ingreso')}<th>Tipo</th><th>Cliente</th>${thSort('monto','Monto')}<th>Vencimiento</th>${activeTab==='recibidos'?'':activeTab==='riesgo'?'<th>Estado</th>':'<th>Días análisis</th>'}</tr></thead>
+            <thead><tr><th>ID</th>${activeTab==='analisis'?thSort('analisis_inicio_ts','Entró a análisis'):thSort('creado','Fecha ingreso')}<th>Tipo</th><th>Cliente</th>${thSort('monto','Monto')}<th>Vencimiento</th>${activeTab==='recibidos'?'':activeTab==='riesgo'?'<th>Estado</th>':'<th>Días análisis</th>'}<th></th></tr></thead>
             <tbody>
               ${tab.length===0
-                ?'<tr><td colspan="7" class="empty">No hay tickets en esta sección</td></tr>'
+                ?'<tr><td colspan="8" class="empty">No hay tickets en esta sección</td></tr>'
                 :tab.map(function(t){
                   var leido=t.leido==='SI'||t.leido===true;
                   var d=calcDias(t);
                   var venc=vencimientoInfo(t);
                   var rowBg=venc&&venc.estado==='vencido'?'background:rgba(239,68,68,.04)':venc&&venc.estado==='riesgo'?'background:rgba(245,158,11,.04)':'';
                   return`<tr class="${leido?'row-read':'row-unread'}" style="${rowBg}" onclick="openPanel('${esc(t.ID)}')">
-                    <td><span class="tid">${t.ID||'—'}</span>${t.comentario_no_leido_operaciones==='SI'?' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">'+ic('message',10)+' Nuevo</span>':''}</td>
+                    <td><span class="tid">${t.ID||'—'}</span></td>
                     <td>${activeTab==='analisis'?fmtDateTimeMs(t.analisis_inicio_ts):fmtDate(t.creado)}</td>
                     <td>${esc(t.tipo_reclamo||'—')}</td>
                     <td><span style="background:var(--b50);color:var(--b700);font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px">${esc(t.empresa||'—')}</span></td>
                     <td style="font-size:12px;font-weight:500;color:var(--g900)">${t.monto ? '$'+Number(String(t.monto).replace(/[^0-9.-]/g,'')).toLocaleString('es-AR') : '—'}</td>
                     <td>${badgeVencimiento(venc)}</td>
                     ${activeTab==='recibidos'?'':activeTab==='riesgo'?'<td><span class="badge '+bc(t.estado)+'">'+estadoLabel(t.estado)+'</span></td>':`<td><span class="db ${diasClass(d)}">${d} hs</span></td>`}
+                    <td style="text-align:right">${t.comentario_no_leido_operaciones==='SI'?'<span title="Comentario nuevo sin leer" style="display:inline-flex;align-items:center;gap:4px;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap">'+ic('message',10)+' Nuevo</span>':''}</td>
                   </tr>`;
                 }).join('')}
             </tbody>
