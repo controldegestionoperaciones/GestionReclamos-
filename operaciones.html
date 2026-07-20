@@ -107,6 +107,7 @@ tbody tr:hover td{background:var(--b50);cursor:pointer}
 <body>
 <div id="app"></div>
 <div class="toast-wrap" id="toasts"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzGAewjnC8AZYQvhgoRGOwnSq2sGCElYyOLyDu_MbYFb9zXrt4WloDQBrWJ15v3ucK0xg/exec';
@@ -155,6 +156,8 @@ var informeFinalFiles=[], enviandoInforme=false;
 var detailComentario='', detailArchivos=[], saving=false;
 var activeNav='tickets'; // tickets | clientes
 var clientes=[], comerciales=[];
+var kpiFiltroCliente='', kpiFiltroDesde='', kpiFiltroHasta='';
+var _kpiCharts={};
 
 function toast(msg,tipo){
   var w=document.getElementById('toasts'),d=document.createElement('div');
@@ -457,6 +460,7 @@ function render(){
   var activos=tickets.filter(function(t){return t.archivado!=='SI';});
   var enRiesgo=activos.filter(function(t){var v=vencimientoInfo(t);return v&&(v.estado==='riesgo'||v.estado==='vencido');}).length;
   var vencidos=activos.filter(function(t){var v=vencimientoInfo(t);return v&&v.estado==='vencido';}).length;
+  var kpiData=activeNav==='kpis'?computeKPIData():null;
 
   app.innerHTML=`
   <div class="app">
@@ -465,6 +469,7 @@ function render(){
       <div class="sb-nav">
         <div class="sb-sec">Panel</div>
         <div class="ni${activeNav==='tickets'?' on':''}" onclick="activeNav='tickets';render()">🎫 Ticketera</div>
+        <div class="ni${activeNav==='kpis'?' on':''}" onclick="activeNav='kpis';render()">📊 KPIs</div>
         <div class="ni${activeNav==='clientes'?' on':''}" onclick="activeNav='clientes';render()">💼 Comerciales <span style="margin-left:auto;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:${clientes.filter(function(c){return!c.comercial_asignado;}).length?'var(--r100)':'var(--g100)'};color:${clientes.filter(function(c){return!c.comercial_asignado;}).length?'var(--r600)':'var(--g500)'}">${clientes.filter(function(c){return!c.comercial_asignado;}).length||''}</span></div>
         <div class="ni${activeNav==='archivados'?' on':''}" onclick="activeNav='archivados';render()">📦 Archivados <span style="margin-left:auto;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:var(--g100);color:var(--g500)">${archivadosList.length||''}</span></div>
       </div>
@@ -475,12 +480,17 @@ function render(){
       </div>
     </div>
     <div class="main">
-      <div class="topbar"><h2>${activeNav==='clientes'?'Gestión de Comerciales':activeNav==='archivados'?'Archivados':'Ticketera'}</h2></div>
+      <div class="topbar"><h2>${activeNav==='clientes'?'Gestión de Comerciales':activeNav==='archivados'?'Archivados':activeNav==='kpis'?'Panel de KPIs':'Ticketera'}</h2></div>
       <div class="content">
-        ${activeNav==='clientes'?renderClientesSection():activeNav==='archivados'?renderArchivadosOpSection(archivadosList):renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos,totalHorasTrabajadas)}
+        ${activeNav==='clientes'?renderClientesSection():activeNav==='archivados'?renderArchivadosOpSection(archivadosList):activeNav==='kpis'?renderKPIsSection(kpiData):renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos,totalHorasTrabajadas)}
       </div>
     </div>
   </div>`;
+  if(activeNav==='kpis' && kpiData){
+    initKPICharts(kpiData.horasMes, kpiData.ticketsMes, kpiData.porCliente);
+  } else {
+    destroyKPICharts();
+  }
 }
 
 // Vista de solo lectura para Operaciones: todos los tickets que Comercial
@@ -646,6 +656,176 @@ function renderFiltros(tipos,empresas){
   html+='</div>';
   return html;
 }
+
+// ============================================================
+//  PANEL DE KPIs — dashboard con filtros de cliente/fecha y
+//  gráficos de evolución en el tiempo (usa Chart.js, cargado por
+//  CDN en el <head>).
+// ============================================================
+var MESES_CORTOS=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function mesLabel(yyyyMM){
+  var p=yyyyMM.split('-');
+  var m=parseInt(p[1],10)-1;
+  return (MESES_CORTOS[m]||'?')+' '+p[0].slice(2);
+}
+// Agrupa una lista de tickets por mes de creación, sumando valueFn(t) en cada balde.
+function agruparPorMes(list,valueFn){
+  var map={};
+  list.forEach(function(t){
+    var dv=ticketDateValue(t);
+    if(!dv) return;
+    var key=dv.slice(0,7);
+    map[key]=(map[key]||0)+valueFn(t);
+  });
+  var keys=Object.keys(map).sort();
+  return { labels: keys.map(mesLabel), values: keys.map(function(k){return Math.round(map[k]*10)/10;}) };
+}
+// Agrupa una lista de tickets por cliente/empresa, sumando horas trabajadas.
+function agruparPorCliente(list){
+  var map={};
+  list.forEach(function(t){
+    var c=t.empresa||t.titular||'Sin cliente';
+    map[c]=(map[c]||0)+calcDias(t);
+  });
+  var keys=Object.keys(map).sort(function(a,b){return map[b]-map[a];});
+  return { labels: keys, values: keys.map(function(k){return map[k];}) };
+}
+// Tickets que respetan los filtros del panel de KPIs (cliente + rango de fechas).
+function getKPITickets(){
+  return tickets.filter(function(t){
+    if(kpiFiltroCliente && (t.empresa||t.titular||'') !== kpiFiltroCliente) return false;
+    if(kpiFiltroDesde && ticketDateValue(t) < kpiFiltroDesde) return false;
+    if(kpiFiltroHasta && ticketDateValue(t) > kpiFiltroHasta) return false;
+    return true;
+  });
+}
+function limpiarFiltrosKPI(){kpiFiltroCliente='';kpiFiltroDesde='';kpiFiltroHasta='';render();}
+function computeKPIData(){
+  var kt=getKPITickets();
+  var activos=kt.filter(function(t){return t.archivado!=='SI';});
+  var rec=activos.filter(function(t){return t.estado==='Recibido';});
+  var ana=activos.filter(function(t){return t.estado==='En análisis';});
+  var fin=activos.filter(function(t){return t.estado==='Finalizado';});
+  var enRiesgoL=activos.filter(function(t){var v=vencimientoInfo(t);return v&&(v.estado==='riesgo'||v.estado==='vencido');});
+  var vencidosL=activos.filter(function(t){var v=vencimientoInfo(t);return v&&v.estado==='vencido';});
+  var totalHoras=kt.reduce(function(s,t){return s+calcDias(t);},0);
+  var finParaProm=kt.filter(function(t){return t.estado==='Finalizado' && t.archivado!=='SI';});
+  var promHoras=finParaProm.length?Math.round(finParaProm.reduce(function(s,t){return s+calcDias(t);},0)/finParaProm.length):0;
+
+  // El gráfico "Horas trabajadas por cliente" respeta el rango de fechas
+  // pero NO el filtro de cliente elegido arriba — así siempre sirve para
+  // comparar entre clientes, aunque estés mirando uno en particular en
+  // las demás tarjetas/gráficos.
+  var ktSoloFecha=tickets.filter(function(t){
+    if(kpiFiltroDesde && ticketDateValue(t) < kpiFiltroDesde) return false;
+    if(kpiFiltroHasta && ticketDateValue(t) > kpiFiltroHasta) return false;
+    return true;
+  });
+
+  return {
+    kt: kt,
+    totalActivos: activos.length,
+    pendientes: rec.length,
+    analisis: ana.length,
+    finalizados: fin.length,
+    enRiesgo: enRiesgoL.length,
+    vencidos: vencidosL.length,
+    totalHoras: Math.round(totalHoras),
+    promHoras: promHoras,
+    horasMes: agruparPorMes(kt, function(t){return calcDias(t);}),
+    ticketsMes: agruparPorMes(kt, function(t){return 1;}),
+    porCliente: agruparPorCliente(ktSoloFecha)
+  };
+}
+function renderKPIFiltros(empresas){
+  var html='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
+  html+='<select onchange="kpiFiltroCliente=this.value;render()" style="padding:7px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:13px;font-family:inherit;color:#374151;background:#fff;outline:none">';
+  html+='<option value="">Todos los clientes</option>';
+  empresas.forEach(function(e){html+='<option value="'+e+'"'+(kpiFiltroCliente===e?' selected':'')+'>'+e+'</option>';});
+  html+='</select>';
+  html+='<span style="font-size:11px;color:var(--g400)">Desde</span>';
+  html+='<input type="date" value="'+kpiFiltroDesde+'" onchange="kpiFiltroDesde=this.value;render()" style="padding:7px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:13px;font-family:inherit;color:#374151;background:#fff;outline:none;width:135px">';
+  html+='<span style="font-size:11px;color:var(--g400)">Hasta</span>';
+  html+='<input type="date" value="'+kpiFiltroHasta+'" onchange="kpiFiltroHasta=this.value;render()" style="padding:7px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:13px;font-family:inherit;color:#374151;background:#fff;outline:none;width:135px">';
+  if(kpiFiltroCliente||kpiFiltroDesde||kpiFiltroHasta){
+    html+='<button onclick="limpiarFiltrosKPI()" style="padding:7px 13px;border:1px solid var(--a500);border-radius:7px;font-size:12px;font-weight:600;font-family:inherit;color:var(--a600);background:var(--a50);cursor:pointer">✕ Limpiar filtros</button>';
+  }
+  html+='</div>';
+  return html;
+}
+function renderKPIsSection(kpiData){
+  var empresas=getOpEmpresas();
+  var alturaPorCliente=Math.max(220, kpiData.porCliente.labels.length*34);
+  return `
+    ${renderKPIFiltros(empresas)}
+    <div class="kpis">
+      <div class="kpi info"><div class="kl">Tickets totales</div><div class="kv">${kpiData.totalActivos}</div></div>
+      <div class="kpi info"><div class="kl">Pendientes</div><div class="kv">${kpiData.pendientes}</div></div>
+      <div class="kpi warn"><div class="kl">En análisis</div><div class="kv">${kpiData.analisis}</div></div>
+      <div class="kpi ok"><div class="kl">Finalizados</div><div class="kv">${kpiData.finalizados}</div></div>
+      <div class="kpi" style="border:1px solid ${kpiData.vencidos>0?'var(--r200, #fecaca)':kpiData.enRiesgo>0?'#fcd34d':'var(--g200)'}; background:${kpiData.vencidos>0?'var(--r50)':kpiData.enRiesgo>0?'var(--a50)':'var(--w)'}">
+        <div class="kl" style="color:${kpiData.vencidos>0?'var(--r600)':kpiData.enRiesgo>0?'var(--a600)':'var(--g700)'}">🚨 En riesgo</div>
+        <div class="kv" style="color:${kpiData.vencidos>0?'var(--r600)':kpiData.enRiesgo>0?'var(--a500)':'var(--g400)'}">${kpiData.enRiesgo}</div>
+      </div>
+      <div class="kpi" style="background:var(--p50,#faf5ff);border:1.5px solid var(--p300,#d8b4fe)">
+        <div class="kl" style="color:var(--p600,#9333ea)">⏱ Prom. horas x ticket</div>
+        <div class="kv" style="color:var(--p600,#9333ea)">${kpiData.promHoras}</div>
+      </div>
+      <div class="kpi" style="background:var(--p50,#faf5ff);border:1.5px solid var(--p300,#d8b4fe)">
+        <div class="kl" style="color:var(--p600,#9333ea)">🕐 Total horas trabajadas</div>
+        <div class="kv" style="color:var(--p600,#9333ea)">${kpiData.totalHoras}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+      <div style="background:var(--w);border:1px solid var(--g200);border-radius:var(--rad-lg);padding:16px">
+        <div style="font-size:13px;font-weight:600;color:var(--g700);margin-bottom:10px">Horas trabajadas por mes</div>
+        <div style="height:220px">${kpiData.horasMes.labels.length?'<canvas id="kpiChartHorasMes"></canvas>':'<p style="font-size:12px;color:var(--g400)">Sin datos para el rango seleccionado.</p>'}</div>
+      </div>
+      <div style="background:var(--w);border:1px solid var(--g200);border-radius:var(--rad-lg);padding:16px">
+        <div style="font-size:13px;font-weight:600;color:var(--g700);margin-bottom:10px">Tickets creados por mes</div>
+        <div style="height:220px">${kpiData.ticketsMes.labels.length?'<canvas id="kpiChartTicketsMes"></canvas>':'<p style="font-size:12px;color:var(--g400)">Sin datos para el rango seleccionado.</p>'}</div>
+      </div>
+    </div>
+    <div style="background:var(--w);border:1px solid var(--g200);border-radius:var(--rad-lg);padding:16px;margin-top:16px">
+      <div style="font-size:13px;font-weight:600;color:var(--g700);margin-bottom:2px">Horas trabajadas por cliente</div>
+      <div style="font-size:11px;color:var(--g400);margin-bottom:10px">Respeta el rango de fechas, no el filtro de cliente de arriba.</div>
+      <div style="height:${alturaPorCliente}px">${kpiData.porCliente.labels.length?'<canvas id="kpiChartPorCliente"></canvas>':'<p style="font-size:12px;color:var(--g400)">Sin datos para el rango seleccionado.</p>'}</div>
+    </div>
+  `;
+}
+function destroyKPICharts(){
+  Object.keys(_kpiCharts).forEach(function(k){ if(_kpiCharts[k]) _kpiCharts[k].destroy(); });
+  _kpiCharts={};
+}
+function initKPICharts(dataHorasMes,dataTicketsMes,dataPorCliente){
+  destroyKPICharts();
+  if (typeof Chart === 'undefined') return; // el CDN no cargó (ej. sin internet)
+
+  var ctx1=document.getElementById('kpiChartHorasMes');
+  if(ctx1 && dataHorasMes.labels.length){
+    _kpiCharts.horasMes=new Chart(ctx1,{
+      type:'line',
+      data:{ labels:dataHorasMes.labels, datasets:[{ label:'Horas trabajadas', data:dataHorasMes.values, borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.12)', tension:0.3, fill:true, pointRadius:3, pointBackgroundColor:'#7c3aed' }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true } } }
+    });
+  }
+  var ctx2=document.getElementById('kpiChartTicketsMes');
+  if(ctx2 && dataTicketsMes.labels.length){
+    _kpiCharts.ticketsMes=new Chart(ctx2,{
+      type:'bar',
+      data:{ labels:dataTicketsMes.labels, datasets:[{ label:'Tickets creados', data:dataTicketsMes.values, backgroundColor:'#3b82f6', borderRadius:4, maxBarThickness:36 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 } } } }
+    });
+  }
+  var ctx3=document.getElementById('kpiChartPorCliente');
+  if(ctx3 && dataPorCliente.labels.length){
+    _kpiCharts.porCliente=new Chart(ctx3,{
+      type:'bar',
+      data:{ labels:dataPorCliente.labels, datasets:[{ label:'Horas trabajadas', data:dataPorCliente.values, backgroundColor:'#8b5cf6', borderRadius:4, maxBarThickness:26 }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ beginAtZero:true } } }
+    });
+  }
+}
 function renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos,totalHorasTrabajadas){
   var tipos=getOptipos();
   var empresas=getOpEmpresas();
@@ -654,20 +834,17 @@ function renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos,totalHo
         ${renderFiltros(tipos,empresas)}
         <div class="kpis">
           <div class="kpi info"><div class="kl">Tickets totales</div><div class="kv">${totalActivos}</div></div>
-          <div class="kpi info"><div class="kl">Pendientes</div><div class="kv">${rec.length}</div></div>
-          <div class="kpi warn"><div class="kl">En análisis</div><div class="kv">${ana.length}</div></div>
-          <div class="kpi ok"><div class="kl">Finalizados</div><div class="kv">${fin.length}</div></div>
           <div class="kpi" style="cursor:pointer;border:1px solid ${vencidos>0?'var(--r200, #fecaca)':enRiesgo>0?'#fcd34d':'var(--g200)'}; background:${vencidos>0?'var(--r50)':enRiesgo>0?'var(--a50)':'var(--w)'}" onclick="activeTab='riesgo';opSortField='creado';opSortDir='desc';render()" title="Ver el listado de tickets en riesgo o vencidos">
             <div class="kl" style="color:${vencidos>0?'var(--r600)':enRiesgo>0?'var(--a600)':'var(--g700)'}">🚨 En riesgo</div>
             <div class="kv" style="color:${vencidos>0?'var(--r600)':enRiesgo>0?'var(--a500)':'var(--g400)'}">${enRiesgo}</div>
             ${vencidos>0?'<div style="font-size:10px;color:var(--r500);margin-top:4px;font-weight:500">'+vencidos+' vencido'+(vencidos!==1?'s':'')+'</div>':'<div style="font-size:9px;color:var(--g400);margin-top:4px">Ver listado →</div>'}
           </div>
           <div class="kpi" style="background:var(--p50,#faf5ff);border:1.5px solid var(--p300,#d8b4fe)">
-            <div class="kl" style="color:var(--p600,#9333ea)">⏱ Prom. horas</div>
+            <div class="kl" style="color:var(--p600,#9333ea)">⏱ Prom. horas x ticket</div>
             <div class="kv" style="color:var(--p600,#9333ea)">${promDias}</div>
           </div>
           <div class="kpi" style="background:var(--p50,#faf5ff);border:1.5px solid var(--p300,#d8b4fe)">
-            <div class="kl" style="color:var(--p600,#9333ea)">🕐 Total horas</div>
+            <div class="kl" style="color:var(--p600,#9333ea)">🕐 Total horas trabajadas</div>
             <div class="kv" style="color:var(--p600,#9333ea)">${totalHorasTrabajadas}</div>
           </div>
         </div>
