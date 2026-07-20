@@ -215,6 +215,32 @@ function bc(e){return{'Recibido':'bn','En análisis':'ba','Finalizado':'bfin','R
 // usuario, para no romper nada de lo ya construido).
 function estadoLabel(e){return e==='Recibido'?'Pendiente':(e||'—');}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// Devuelve un ícono lineal (SVG, stroke=currentColor) para reemplazar los
+// emojis. Usa comillas simples en los atributos del SVG a propósito, para
+// poder insertarse sin romper strings HTML que ya están entre comillas dobles.
+function ic(name,size){
+  size=size||14;
+  var attrs="width='"+size+"' height='"+size+"' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' style='vertical-align:-2px;flex-shrink:0'";
+  var p={
+    clock:"<circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 3'/>",
+    alert:"<path d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z'/><path d='M12 9v4'/><path d='M12 17h.01'/>",
+    gear:"<circle cx='12' cy='12' r='3'/><path d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z'/>",
+    user:"<circle cx='12' cy='8' r='4'/><path d='M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1'/>",
+    message:"<path d='M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z'/>",
+    x:"<path d='M18 6 6 18'/><path d='M6 6l12 12'/>",
+    check:"<path d='M20 6 9 17l-5-5'/>",
+    file:"<path d='M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z'/><path d='M14 2v6h6'/><path d='M9 13h6'/><path d='M9 17h6'/>",
+    briefcase:"<rect x='2' y='7' width='20' height='14' rx='2'/><path d='M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16'/>",
+    trash:"<path d='M3 6h18'/><path d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6'/><path d='M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/>",
+    paperclip:"<path d='M21.44 11.05 12.25 20.24a5 5 0 0 1-7.07-7.07L14.59 3.66a3.5 3.5 0 0 1 4.95 4.95L10.12 18.02a2 2 0 0 1-2.83-2.83l8.49-8.49'/>"
+  };
+  return "<svg "+attrs+">"+(p[name]||'')+"</svg>";
+}
+// Círculo relleno (para reemplazar 🔴🟡🟢, indicadores de estado por color).
+function dot(color,size){
+  size=size||9;
+  return "<svg width='"+size+"' height='"+size+"' viewBox='0 0 10 10' style='vertical-align:-1px;flex-shrink:0'><circle cx='5' cy='5' r='5' fill='"+color+"'/></svg>";
+}
 
 function fileToBase64(file) {
   return new Promise(function(res, rej) {
@@ -455,7 +481,7 @@ function vencimientoInfo(t) {
     return { estado: 'vencido', dias: diasVencido, label: 'Vencido hace ' + diasVencido + ' día' + (diasVencido !== 1 ? 's' : '') };
   } else if (habilesRestantes <= 3) {
     // Por vencer
-    return { estado: 'riesgo', dias: habilesRestantes, label: habilesRestantes <= 0 ? 'Vence hoy ⚠' : habilesRestantes + ' día' + (habilesRestantes !== 1 ? 's' : '') + ' ⚠' };
+    return { estado: 'riesgo', dias: habilesRestantes, label: habilesRestantes <= 0 ? 'Vence hoy' : habilesRestantes + ' día' + (habilesRestantes !== 1 ? 's' : '') };
   } else {
     // OK
     return { estado: 'ok', dias: habilesRestantes, label: habilesRestantes + ' días' };
@@ -464,9 +490,9 @@ function vencimientoInfo(t) {
 
 function badgeVencimiento(v) {
   if (!v) return '<span style="font-size:11px;color:var(--g300)">—</span>';
-  if (v.estado === 'vencido') return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;background:var(--r50);color:var(--r600);border:1px solid var(--r100)">🔴 ' + v.label + '</span>';
-  if (v.estado === 'riesgo')  return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;background:var(--a50);color:var(--a600);border:1px solid #fcd34d">🟡 ' + v.label + '</span>';
-  return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;background:var(--gr50);color:var(--gr600);border:1px solid var(--gr100)">🟢 ' + v.label + '</span>';
+  if (v.estado === 'vencido') return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;background:var(--r50);color:var(--r600);border:1px solid var(--r100)">' + dot('#ef4444') + ' ' + v.label + '</span>';
+  if (v.estado === 'riesgo')  return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;background:var(--a50);color:var(--a600);border:1px solid #fcd34d">' + dot('#f59e0b') + ' ' + v.label + '</span>';
+  return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;background:var(--gr50);color:var(--gr600);border:1px solid var(--gr100)">' + dot('#22c55e') + ' ' + v.label + '</span>';
 }
 
 function render(){
@@ -499,7 +525,7 @@ function render(){
   app.innerHTML=`
   <div class="app">
     <div class="sb">
-      <div class="sb-logo"><div class="sb-icon">⚙️</div><div><h1>Plataforma de gestión</h1><p>Operaciones</p></div></div>
+      <div class="sb-logo"><div class="sb-icon">${ic('gear',20)}</div><div><h1>Plataforma de gestión</h1><p>Operaciones</p></div></div>
       <div class="sb-nav">
         <div class="sb-sec">Panel</div>
         <div class="ni${activeNav==='tickets'?' on':''}" onclick="activeNav='tickets';render()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M2 9a3 3 0 1 0 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 11v2"/><path d="M13 17v2"/></svg> Ticketera</div>
@@ -508,7 +534,7 @@ function render(){
         <div class="ni${activeNav==='clientes'?' on':''}" onclick="activeNav='clientes';render()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Comerciales <span style="margin-left:auto;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:${clientes.filter(function(c){return!c.comercial_asignado;}).length?'var(--r100)':'var(--g100)'};color:${clientes.filter(function(c){return!c.comercial_asignado;}).length?'var(--r600)':'var(--g500)'}">${clientes.filter(function(c){return!c.comercial_asignado;}).length||''}</span></div>
       </div>
       <div class="sb-foot">
-        <div style="font-size:20px">👤</div>
+        <div style="font-size:20px">${ic('user',18)}</div>
         <div class="sf-name">${esc(_u.name)}</div>
         <button class="btn-out" onclick="sessionStorage.clear();window.location.href='index.html'">Salir</button>
       </div>
@@ -543,7 +569,7 @@ function renderArchivadosOpSection(archivadosList){
                   var info={};
                   try{info=typeof t.archivado_info==='object'?t.archivado_info:JSON.parse(t.archivado_info||'{}');}catch(e){}
                   return`<tr onclick="openPanel('${esc(t.ID)}')">
-                    <td><span class="tid">${t.ID||'—'}</span>${t.comentario_no_leido_operaciones==='SI'?' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">💬 Nuevo</span>':''}</td>
+                    <td><span class="tid">${t.ID||'—'}</span>${t.comentario_no_leido_operaciones==='SI'?' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">'+ic('message',10)+' Nuevo</span>':''}</td>
                     <td>${esc(t.tipo_reclamo||'—')}</td>
                     <td><span style="background:var(--b50);color:var(--b700);font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px">${esc(t.empresa||'—')}</span></td>
                     <td><span class="badge ${bc(t.estado)}">${estadoLabel(t.estado)}</span></td>
@@ -596,7 +622,7 @@ function renderClientesSection(){
   <div style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
     <div>
       <div style="font-size:13px;font-weight:600;color:var(--g900)">Comerciales registrados (${comerciales.length})</div>
-      ${sinAsignar.length?`<div style="font-size:11px;color:var(--r500);margin-top:2px">⚠ ${sinAsignar.length} cliente${sinAsignar.length!==1?'s':''} sin comercial asignado</div>`:'<div style="font-size:11px;color:var(--gr600);margin-top:2px">✅ Todos los clientes tienen comercial asignado</div>'}
+      ${sinAsignar.length?`<div style="font-size:11px;color:var(--r500);margin-top:2px">${ic('alert')} ${sinAsignar.length} cliente${sinAsignar.length!==1?'s':''} sin comercial asignado</div>`:'<div style="font-size:11px;color:var(--gr600);margin-top:2px">'+ic('check')+' Todos los clientes tienen comercial asignado</div>'}
     </div>
   </div>
   ${sinAsignar.length?`
@@ -685,7 +711,7 @@ function renderFiltros(tipos,empresas){
   html+='<span style="font-size:11px;color:var(--g400)">Hasta</span>';
   html+='<input type="date" value="'+opFiltroHasta+'" onchange="opFiltroHasta=this.value;render()" style="padding:7px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:13px;font-family:inherit;color:#374151;background:#fff;outline:none;width:135px">';
   if(opFiltroTipo||opFiltroEmpresa||opFiltroEstado||opFiltroDesde||opFiltroHasta){
-    html+='<button onclick="limpiarFiltros()" style="padding:7px 13px;border:1px solid var(--a500);border-radius:7px;font-size:12px;font-weight:600;font-family:inherit;color:var(--a600);background:var(--a50);cursor:pointer">✕ Limpiar filtros</button>';
+    html+='<button onclick="limpiarFiltros()" style="padding:7px 13px;border:1px solid var(--a500);border-radius:7px;font-size:12px;font-weight:600;font-family:inherit;color:var(--a600);background:var(--a50);cursor:pointer">'+ic('x')+' Limpiar filtros</button>';
   }
   html+='</div>';
   return html;
@@ -782,7 +808,7 @@ function renderKPIFiltros(empresas){
   html+='<span style="font-size:11px;color:var(--g400)">Hasta</span>';
   html+='<input type="date" value="'+kpiFiltroHasta+'" onchange="kpiFiltroHasta=this.value;render()" style="padding:7px 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:13px;font-family:inherit;color:#374151;background:#fff;outline:none;width:135px">';
   if(kpiFiltroCliente||kpiFiltroDesde||kpiFiltroHasta){
-    html+='<button onclick="limpiarFiltrosKPI()" style="padding:7px 13px;border:1px solid var(--a500);border-radius:7px;font-size:12px;font-weight:600;font-family:inherit;color:var(--a600);background:var(--a50);cursor:pointer">✕ Limpiar filtros</button>';
+    html+='<button onclick="limpiarFiltrosKPI()" style="padding:7px 13px;border:1px solid var(--a500);border-radius:7px;font-size:12px;font-weight:600;font-family:inherit;color:var(--a600);background:var(--a50);cursor:pointer">'+ic('x')+' Limpiar filtros</button>';
   }
   html+='</div>';
   return html;
@@ -798,7 +824,7 @@ function renderKPIsSection(kpiData){
       <div class="kpi warn"><div class="kl">En análisis</div><div class="kv">${kpiData.analisis}</div></div>
       <div class="kpi ok"><div class="kl">Finalizados</div><div class="kv">${kpiData.finalizados}</div></div>
       <div class="kpi" style="border:1px solid ${kpiData.vencidos>0?'var(--r200, #fecaca)':kpiData.enRiesgo>0?'#fcd34d':'var(--g200)'}; background:${kpiData.vencidos>0?'var(--r50)':kpiData.enRiesgo>0?'var(--a50)':'var(--w)'}">
-        <div class="kl" style="color:${kpiData.vencidos>0?'var(--r600)':kpiData.enRiesgo>0?'var(--a600)':'var(--g700)'}">🚨 En riesgo</div>
+        <div class="kl" style="color:${kpiData.vencidos>0?'var(--r600)':kpiData.enRiesgo>0?'var(--a600)':'var(--g700)'}">${ic('alert')} En riesgo</div>
         <div class="kv" style="color:${kpiData.vencidos>0?'var(--r600)':kpiData.enRiesgo>0?'var(--a500)':'var(--g400)'}">${kpiData.enRiesgo}</div>
       </div>
       <div class="kpi" style="background:var(--p50,#faf5ff);border:1.5px solid var(--p300,#d8b4fe)">
@@ -806,7 +832,7 @@ function renderKPIsSection(kpiData){
         <div class="kv" style="color:var(--p600,#9333ea)">${kpiData.promHoras}</div>
       </div>
       <div class="kpi" style="background:var(--p50,#faf5ff);border:1.5px solid var(--p300,#d8b4fe)">
-        <div class="kl" style="color:var(--p600,#9333ea)">🕐 Total horas trabajadas</div>
+        <div class="kl" style="color:var(--p600,#9333ea)">${ic('clock')} Total horas trabajadas</div>
         <div class="kv" style="color:var(--p600,#9333ea)">${kpiData.totalHoras}</div>
       </div>
     </div>
@@ -878,7 +904,7 @@ function renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos,totalHo
         <div class="kpis">
           <div class="kpi info"><div class="kl">Tickets totales</div><div class="kv">${totalActivos}</div></div>
           <div class="kpi" style="cursor:pointer;border:1px solid ${vencidos>0?'var(--r200, #fecaca)':enRiesgo>0?'#fcd34d':'var(--g200)'}; background:${vencidos>0?'var(--r50)':enRiesgo>0?'var(--a50)':'var(--w)'}" onclick="activeTab='riesgo';opSortField='creado';opSortDir='desc';render()" title="Ver el listado de tickets en riesgo o vencidos">
-            <div class="kl" style="color:${vencidos>0?'var(--r600)':enRiesgo>0?'var(--a600)':'var(--g700)'}">🚨 En riesgo</div>
+            <div class="kl" style="color:${vencidos>0?'var(--r600)':enRiesgo>0?'var(--a600)':'var(--g700)'}">${ic('alert')} En riesgo</div>
             <div class="kv" style="color:${vencidos>0?'var(--r600)':enRiesgo>0?'var(--a500)':'var(--g400)'}">${enRiesgo}</div>
             ${vencidos>0?'<div style="font-size:10px;color:var(--r500);margin-top:4px;font-weight:500">'+vencidos+' vencido'+(vencidos!==1?'s':'')+'</div>':'<div style="font-size:9px;color:var(--g400);margin-top:4px">Ver listado →</div>'}
           </div>
@@ -887,7 +913,7 @@ function renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos,totalHo
             <div class="kv" style="color:var(--p600,#9333ea)">${promDias}</div>
           </div>
           <div class="kpi" style="background:var(--p50,#faf5ff);border:1.5px solid var(--p300,#d8b4fe)">
-            <div class="kl" style="color:var(--p600,#9333ea)">🕐 Total horas trabajadas</div>
+            <div class="kl" style="color:var(--p600,#9333ea)">${ic('clock')} Total horas trabajadas</div>
             <div class="kv" style="color:var(--p600,#9333ea)">${totalHorasTrabajadas}</div>
           </div>
         </div>
@@ -895,7 +921,7 @@ function renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos,totalHo
           <button class="tab${activeTab==='recibidos'?' on':''}" onclick="activeTab='recibidos';opSortField='creado';opSortDir='desc';render()">Pendientes<span class="tc">${rec.length}</span></button>
           <button class="tab${activeTab==='analisis'?' on':''}" onclick="activeTab='analisis';opSortField='analisis_inicio_ts';opSortDir='desc';render()">En análisis<span class="tc">${ana.length}</span></button>
           <button class="tab${activeTab==='finalizados'?' on':''}" onclick="activeTab='finalizados';opSortField='creado';opSortDir='desc';render()">Finalizados<span class="tc">${fin.length}</span></button>
-          ${activeTab==='riesgo'?'<button class="tab on">🚨 En riesgo / vencidos<span class="tc">'+tab.length+'</span></button>':''}
+          ${activeTab==='riesgo'?'<button class="tab on">'+ic('alert')+' En riesgo / vencidos<span class="tc">'+tab.length+'</span></button>':''}
         </div>
         ${activeTab==='analisis'?'<p style="font-size:11px;color:var(--g400);margin-bottom:8px">Ordenados por los que entraron a análisis más recientemente primero.</p>':''}
         <div class="tw">
@@ -910,7 +936,7 @@ function renderTicketsSection(rec,ana,fin,tab,promDias,enRiesgo,vencidos,totalHo
                   var venc=vencimientoInfo(t);
                   var rowBg=venc&&venc.estado==='vencido'?'background:rgba(239,68,68,.04)':venc&&venc.estado==='riesgo'?'background:rgba(245,158,11,.04)':'';
                   return`<tr class="${leido?'row-read':'row-unread'}" style="${rowBg}" onclick="openPanel('${esc(t.ID)}')">
-                    <td><span class="tid">${t.ID||'—'}</span>${t.comentario_no_leido_operaciones==='SI'?' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">💬 Nuevo</span>':''}</td>
+                    <td><span class="tid">${t.ID||'—'}</span>${t.comentario_no_leido_operaciones==='SI'?' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">'+ic('message',10)+' Nuevo</span>':''}</td>
                     <td>${activeTab==='analisis'?fmtDateTimeMs(t.analisis_inicio_ts):fmtDate(t.creado)}</td>
                     <td>${esc(t.tipo_reclamo||'—')}</td>
                     <td><span style="background:var(--b50);color:var(--b700);font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px">${esc(t.empresa||'—')}</span></td>
@@ -983,7 +1009,7 @@ function renderPanel(){
             </div>
           </div>
         </div>
-        <button class="close" onclick="intentarCerrarPanel()">✕</button>
+        <button class="close" onclick="intentarCerrarPanel()">${ic('x',16)}</button>
       </div>
       <div class="pb">
 
@@ -1005,14 +1031,14 @@ function renderPanel(){
         <!-- INFORME FINAL YA ENVIADO (si existe) -->
         ${adjsInformeFinal.length ? `
         <div class="sec">
-          <div class="sec-t" style="color:var(--gr700)">✅ Informe final</div>
+          <div class="sec-t" style="color:var(--gr700)">${ic('check')} Informe final</div>
           <div style="display:flex;flex-direction:column;gap:6px">
             ${adjsInformeFinal.map(function(a){
               var fid=a.fileId||'';
               return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--gr50);border:1px solid var(--gr500);border-radius:var(--rad)">
-                <span>📄</span>
+                <span>${ic('file')}</span>
                 <a href="#" onclick="abrirAdjunto(event,'${fid}','${encodeURIComponent(a.nombre||'')}','')" style="flex:1;color:var(--b600);text-decoration:underline;font-weight:500">${esc(a.nombre)}</a>
-                <span style="font-size:9px;font-weight:700;color:var(--gr700);background:var(--gr100);padding:2px 7px;border-radius:10px;letter-spacing:.03em">✅ ENVIADO</span>
+                <span style="font-size:9px;font-weight:700;color:var(--gr700);background:var(--gr100);padding:2px 7px;border-radius:10px;letter-spacing:.03em">${ic('check',10)} ENVIADO</span>
               </div>`;
             }).join('')}
           </div>
@@ -1049,16 +1075,16 @@ function renderPanel(){
               var puedeBorrar = c.id && c.autorEmail === _u.email;
               return`<div style="border-left:2px solid ${esCom?'var(--b500)':'var(--p500)'};padding:7px 10px;margin-bottom:6px;background:${esCom?'var(--b50)':'var(--p50)'};border-radius:0 var(--rad) var(--rad) 0">
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
-                  <div style="font-size:10px;font-weight:600;color:${esCom?'var(--b700)':'var(--p600)'};margin-bottom:3px">${esCom?'💼 Comercial':'⚙️ Operaciones'} · ${esc(c.usuario||'')} · ${esc(c.ts||'')}</div>
-                  ${puedeBorrar?`<button title="Eliminar comentario" onclick="event.stopPropagation();eliminarComentarioTicket('${t.ID}','${c.id}')" style="background:none;border:none;color:var(--r500);cursor:pointer;font-size:12px;padding:0;flex-shrink:0">🗑</button>`:''}
+                  <div style="font-size:10px;font-weight:600;color:${esCom?'var(--b700)':'var(--p600)'};margin-bottom:3px">${esCom?ic('briefcase')+' Comercial':ic('gear')+' Operaciones'} · ${esc(c.usuario||'')} · ${esc(c.ts||'')}</div>
+                  ${puedeBorrar?`<button title="Eliminar comentario" onclick="event.stopPropagation();eliminarComentarioTicket('${t.ID}','${c.id}')" style="background:none;border:none;color:var(--r500);cursor:pointer;font-size:12px;padding:0;flex-shrink:0">${ic('trash')}</button>`:''}
                 </div>
                 <div style="font-size:12px;color:var(--g700)">${esc(c.texto||'')}</div>
                 ${archivosComentario.length?`<div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">
                   ${archivosComentario.map(function(a){
                     return `<div style="font-size:11px;color:var(--g500)">
                       ${a.fileId
-                        ? `<a href="#" onclick="abrirAdjunto(event,'${a.fileId}','${encodeURIComponent(a.nombre||'')}','')" style="color:var(--b600);text-decoration:underline">📎 ${esc(a.nombre)}</a>`
-                        : `📎 ${esc(a.nombre)}`}
+                        ? `<a href="#" onclick="abrirAdjunto(event,'${a.fileId}','${encodeURIComponent(a.nombre||'')}','')" style="color:var(--b600);text-decoration:underline">${ic('paperclip')} ${esc(a.nombre)}</a>`
+                        : `${ic('paperclip')} ${esc(a.nombre)}`}
                     </div>`;
                   }).join('')}
                 </div>`:''}
@@ -1069,11 +1095,11 @@ function renderPanel(){
             <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
               <div style="flex:1;border:1.5px dashed var(--g300);border-radius:var(--rad);padding:9px 10px;text-align:center;cursor:pointer;background:#fff;font-size:11px;color:var(--g500)" onclick="document.getElementById('detail-archivo-inp').click()">
                 <input id="detail-archivo-inp" type="file" multiple style="display:none" onchange="syncDetailComentario();setDetailArchivos(this)">
-                <span>📎 ${detailArchivos.length ? detailArchivos.length+' archivo'+(detailArchivos.length!==1?'s':'')+' seleccionado'+(detailArchivos.length!==1?'s':'') : 'Clic para adjuntar uno o más archivos (opcional)'}</span>
+                <span>${ic('paperclip')} ${detailArchivos.length ? detailArchivos.length+' archivo'+(detailArchivos.length!==1?'s':'')+' seleccionado'+(detailArchivos.length!==1?'s':'') : 'Clic para adjuntar uno o más archivos (opcional)'}</span>
               </div>
               <button class="btn btn-p" style="font-size:11px" onclick="agregarComentarioTicket('${t.ID}')" ${saving?'disabled':''}>${saving?'Enviando...':'Enviar'}</button>
             </div>
-            ${detailArchivos.length ? '<div style="display:flex;flex-direction:column;gap:4px;margin-top:7px">' + detailArchivos.map(function(f,i){return '<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--g700);background:#fff;border:1px solid var(--g100);border-radius:var(--rad);padding:5px 8px"><span>📎 '+esc(f.name)+'</span><span style="cursor:pointer;color:var(--r500);font-weight:600" onclick="quitarDetailArchivo('+i+')">✕</span></div>';}).join('') + '</div>' : ''}
+            ${detailArchivos.length ? '<div style="display:flex;flex-direction:column;gap:4px;margin-top:7px">' + detailArchivos.map(function(f,i){return '<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--g700);background:#fff;border:1px solid var(--g100);border-radius:var(--rad);padding:5px 8px"><span>'+ic('paperclip')+' '+esc(f.name)+'</span><span style="cursor:pointer;color:var(--r500);font-weight:600" onclick="quitarDetailArchivo('+i+')">'+ic('x',11)+'</span></div>';}).join('') + '</div>' : ''}
           </div>
         </div>
 
@@ -1086,16 +1112,16 @@ function renderPanel(){
 
         <!-- INFORME FINAL (formulario de carga) -->
         <div class="sec">
-          <div class="sec-t" style="font-size:12.5px;font-weight:700;color:var(--b700);text-transform:uppercase;letter-spacing:.04em">📄 Informe final</div>
+          <div class="sec-t" style="font-size:12.5px;font-weight:700;color:var(--b700);text-transform:uppercase;letter-spacing:.04em">${ic('file')} Informe final</div>
           <p style="font-size:11px;color:var(--g400)">Subí uno o más archivos con el informe final. Al confirmar, se les avisa automáticamente por mail a Comercial y a Auditoría, con el detalle del reclamo, y el ticket pasa a "Finalizado".</p>
           <div style="display:flex;align-items:center;gap:8px">
             <div id="informe-adj-box" style="flex:1;border:1.5px dashed var(--g300);border-radius:var(--rad);padding:9px 10px;text-align:center;cursor:pointer;background:var(--g50);font-size:11px;color:var(--g500)" onclick="document.getElementById('informe-adj-inp').click()">
               <input id="informe-adj-inp" type="file" multiple style="display:none" onchange="setInformeArchivos(this)">
-              <span id="informe-adj-label">📎 Clic para adjuntar uno o más archivos</span>
+              <span id="informe-adj-label">${ic('paperclip')} Clic para adjuntar uno o más archivos</span>
             </div>
             <button class="btn btn-p" style="font-size:11px" onclick="enviarInformeFinal('${t.ID}')" ${enviandoInforme?'disabled':''}>${enviandoInforme?'Enviando...':'Enviar'}</button>
           </div>
-          ${informeFinalFiles.length ? '<div style="display:flex;flex-direction:column;gap:4px;margin-top:7px">' + informeFinalFiles.map(function(f,i){return '<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--g700);background:var(--g50);border:1px solid var(--g100);border-radius:var(--rad);padding:5px 8px"><span>📎 '+esc(f.name)+'</span><span style="cursor:pointer;color:var(--r500);font-weight:600" onclick="quitarInformeArchivo('+i+')">✕</span></div>';}).join('') + '</div>' : ''}
+          ${informeFinalFiles.length ? '<div style="display:flex;flex-direction:column;gap:4px;margin-top:7px">' + informeFinalFiles.map(function(f,i){return '<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--g700);background:var(--g50);border:1px solid var(--g100);border-radius:var(--rad);padding:5px 8px"><span>'+ic('paperclip')+' '+esc(f.name)+'</span><span style="cursor:pointer;color:var(--r500);font-weight:600" onclick="quitarInformeArchivo('+i+')">'+ic('x',11)+'</span></div>';}).join('') + '</div>' : ''}
         </div>
 
       </div>
@@ -1120,12 +1146,12 @@ function renderAdjuntosOp(t, adjs) {
     var u = a.url||'';
     var esInforme = a.tipo === 'informe_final';
     return `<div style="display:flex;align-items:center;gap:8px;padding:7px 9px;background:${esInforme?'var(--gr50)':'var(--g50)'};border:1px solid ${esInforme?'var(--gr500)':'var(--g100)'};border-radius:var(--rad);margin-bottom:5px;font-size:12px">
-      <span>${esInforme?'📄':'📎'}</span>
+      <span>${esInforme?ic('file'):ic('paperclip')}</span>
       ${(fid||u)
         ? `<a href="#" onclick="abrirAdjunto(event,'${fid}','${encodeURIComponent(a.nombre||'')}','${u}')" style="flex:1;color:var(--b600);text-decoration:underline;font-weight:500">${esc(a.nombre)}</a>`
         : `<span style="flex:1;color:var(--g900)">${esc(a.nombre)} <span style="color:var(--g400);font-weight:400">(sin vista previa disponible)</span></span>`}
       ${esInforme
-        ? `<span style="font-size:9px;font-weight:700;color:var(--gr700);background:var(--gr100);padding:2px 7px;border-radius:10px;letter-spacing:.03em">✅ INFORME FINAL</span>`
+        ? `<span style="font-size:9px;font-weight:700;color:var(--gr700);background:var(--gr100);padding:2px 7px;border-radius:10px;letter-spacing:.03em">${ic('check',10)} INFORME FINAL</span>`
         : `<span style="font-size:10px;color:var(--g400)">${esc(a.origen||'')}</span>`}
     </div>`;
   }).join('');
@@ -1374,7 +1400,7 @@ window.enviarInformeFinal=async function(id){
     }
     var res=await api({action:'enviarInformeFinal',id:id,archivos:archivosSubidos});
     if(!res.ok)throw new Error(res.error||'Error desconocido');
-    toast('Informe final enviado ✓','ok');
+    toast('Informe final enviado','ok');
     informeFinalFiles=[];
     enviandoInforme=false;
     window.closePanel();
