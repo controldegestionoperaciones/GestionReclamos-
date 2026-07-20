@@ -129,6 +129,27 @@ function toast(msg, tipo) {
   setTimeout(function(){ d.remove(); }, 3200);
 }
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// Ícono lineal (SVG, stroke=currentColor) para reemplazar los emojis.
+// Comillas simples en los atributos del SVG para no romper strings HTML
+// que ya están entre comillas dobles.
+function ic(name,size){
+  size=size||14;
+  var attrs="width='"+size+"' height='"+size+"' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' style='vertical-align:-2px;flex-shrink:0'";
+  var p={
+    search:"<circle cx='11' cy='11' r='8'/><path d='m21 21-4.35-4.35'/>",
+    ticket:"<path d='M2 9a3 3 0 1 0 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 1 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z'/><path d='M13 5v2'/><path d='M13 11v2'/><path d='M13 17v2'/>",
+    user:"<circle cx='12' cy='8' r='4'/><path d='M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1'/>",
+    lock:"<rect x='3' y='11' width='18' height='11' rx='2'/><path d='M7 11V7a5 5 0 0 1 10 0v4'/>",
+    x:"<path d='M18 6 6 18'/><path d='M6 6l12 12'/>",
+    check:"<path d='M20 6 9 17l-5-5'/>",
+    file:"<path d='M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z'/><path d='M14 2v6h6'/><path d='M9 13h6'/><path d='M9 17h6'/>",
+    paperclip:"<path d='M21.44 11.05 12.25 20.24a5 5 0 0 1-7.07-7.07L14.59 3.66a3.5 3.5 0 0 1 4.95 4.95L10.12 18.02a2 2 0 0 1-2.83-2.83l8.49-8.49'/>",
+    gear:"<circle cx='12' cy='12' r='3'/><path d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z'/>",
+    briefcase:"<rect x='2' y='7' width='20' height='14' rx='2'/><path d='M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16'/>",
+    message:"<path d='M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z'/>"
+  };
+  return "<svg "+attrs+">"+(p[name]||'')+"</svg>";
+}
 function fmtDate(s){ if(!s)return'—'; if(s.includes('/'))return s; var d=s.slice(0,10).split('-'); return d.length<3?s:d[2]+'/'+d[1]+'/'+d[0]; }
 function getBC(e){ return {'Recibido':'bn','En análisis':'ba','Finalizado':'bfin','Re abierto':'breo'}[e]||'bn'; }
 
@@ -248,14 +269,14 @@ function render() {
   <div class="app">
     <div class="sidebar">
       <div class="sb-logo">
-        <div class="sb-logo-icon">🔍</div>
+        <div class="sb-logo-icon">${ic('search',18)}</div>
         <div><h1>Plataforma de gestión</h1><p>Auditoría</p></div>
       </div>
       <div class="sb-nav">
-        <div class="nav-item active">🎫 Ticketera</div>
+        <div class="nav-item active">${ic('ticket',16)} Ticketera</div>
       </div>
       <div class="sb-footer">
-        <div style="font-size:18px">👤</div>
+        <div style="font-size:18px">${ic('user',16)}</div>
         <div class="sf-name">${esc(currentUser.name)}</div>
         <button class="btn-out" onclick="sessionStorage.clear();window.location.href='index.html'">Salir</button>
       </div>
@@ -263,15 +284,15 @@ function render() {
     <div class="main">
       <div class="topbar">
         <h2>Ticketera</h2>
-        <span class="badge-ro">🔍 Auditoría — Solo lectura</span>
+        <span class="badge-ro">${ic('search',11)} Auditoría — Solo lectura</span>
       </div>
       <div class="content">
-        <div class="readonly-banner">🔒 Solo podés ver el detalle de los tickets. No podés modificarlos ni agregar información.</div>
+        <div class="readonly-banner">${ic('lock',13)} Solo podés ver el detalle de los tickets. No podés modificarlos ni agregar información.</div>
         <div class="shdr">
           <h2>Total de tickets (${filtered.length})</h2>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-          <input class="search" id="search-inp" placeholder="🔍 Buscar ticket..." style="width:200px" value="${esc(searchInput)}"
+          <input class="search" id="search-inp" placeholder="Buscar ticket..." style="width:200px" value="${esc(searchInput)}"
             oninput="searchInput=this.value;ejecutarBusqueda()"
             onkeydown="if(event.key==='Enter'){ejecutarBusqueda()}">
           <select class="search" style="width:160px" onchange="filtroCliente=this.value;render()">
@@ -287,7 +308,7 @@ function render() {
           <span style="font-size:11px;color:var(--g400)">Hasta</span>
           <input class="search" type="date" style="width:135px" value="${filtroFechaHasta}" onchange="filtroFechaHasta=this.value;render()">
           ${(filtroCliente||filtroEstado||filtroFechaDesde||filtroFechaHasta||searchQ)
-            ? '<button class="btn btn-ghost" onclick="filtroCliente=\'\';filtroEstado=\'\';filtroFechaDesde=\'\';filtroFechaHasta=\'\';searchQ=\'\';searchInput=\'\';render()">✕ Limpiar</button>'
+            ? '<button class="btn btn-ghost" onclick="filtroCliente=\'\';filtroEstado=\'\';filtroFechaDesde=\'\';filtroFechaHasta=\'\';searchQ=\'\';searchInput=\'\';render()">'+ic('x',11)+' Limpiar</button>'
             : ''}
         </div>
         <div class="tw">
@@ -306,10 +327,10 @@ function render() {
             </tr></thead>
             <tbody>
               ${filtered.length === 0
-                ? '<tr><td colspan="6" class="empty"><div style="font-size:36px;opacity:.4;margin-bottom:10px">🎫</div><p>No hay tickets</p></td></tr>'
+                ? '<tr><td colspan="6" class="empty"><div style="font-size:36px;opacity:.4;margin-bottom:10px">'+ic('ticket',36)+'</div><p>No hay tickets</p></td></tr>'
                 : filtered.map(function(t){
                     return '<tr onclick="openPanel(\'' + esc(t.ID) + '\')">'
-                      + '<td><span class="tid">' + (t.ID||'—') + '</span>' + (t.comentario_no_leido_auditoria==='SI' ? ' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">💬 Nuevo</span>' : '') + '</td>'
+                      + '<td><span class="tid">' + (t.ID||'—') + '</span>' + (t.comentario_no_leido_auditoria==='SI' ? ' <span title="Comentario nuevo sin leer" style="display:inline-block;background:var(--r500,#ef4444);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px;margin-left:4px;vertical-align:middle">'+ic('message',10)+' Nuevo</span>' : '') + '</td>'
                       + '<td>' + fmtDate(t.creado) + '</td>'
                       + '<td>' + esc(t.tipo_reclamo||'—') + '</td>'
                       + '<td style="font-size:11px">' + esc(t.empresa||t.titular||'—') + '</td>'
@@ -358,12 +379,12 @@ function renderPanel() {
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap">
               <span class="tid" style="font-size:11px">${t.ID||'—'}</span>
               <span class="badge ${getBC(t.estado)}">${t.estado||'—'}</span>
-              <span style="background:var(--au50);color:var(--au700);font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;border:1px solid var(--au100)">🔍 Solo lectura</span>
+              <span style="background:var(--au50);color:var(--au700);font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;border:1px solid var(--au100)">'+ic('search',10)+' Solo lectura</span>
             </div>
             <div style="font-size:14px;font-weight:600;color:var(--g900)">${esc(t.titular||t.empresa||'—')}</div>
             <div style="font-size:11px;color:var(--g500);margin-top:3px">${esc(t.tipo_reclamo||'—')}</div>
           </div>
-          <button class="close" onclick="closePanel()">✕</button>
+          <button class="close" onclick="closePanel()">'+ic('x',16)+'</button>
         </div>
       </div>
       <div class="pbody">
@@ -415,14 +436,14 @@ function renderInformeFinalDestacado(adjs) {
   var files = (adjs||[]).filter(function(a){ return a.tipo === 'informe_final'; });
   if (!files.length) return '';
   return '<div class="dsec">'
-    + '<div class="dsec-title" style="color:var(--gr700)">✅ Informe final</div>'
+    + '<div class="dsec-title" style="color:var(--gr700)">'+ic('check')+' Informe final</div>'
     + '<div style="display:flex;flex-direction:column;gap:6px">'
     + files.map(function(a){
         var fid=a.fileId||'', u=a.url||'';
         return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--gr50);border:1px solid var(--gr500);border-radius:var(--rad)">'
-          + '<span>📄</span>'
+          + '<span>'+ic('file')+'</span>'
           + '<a href="#" onclick="abrirAdjunto(event,\''+fid+'\',\''+encodeURIComponent(a.nombre||'')+'\',\''+u+'\')" style="flex:1;color:var(--b600);text-decoration:underline;font-weight:500">'+esc(a.nombre)+'</a>'
-          + '<span style="font-size:9px;font-weight:700;color:var(--gr700);background:var(--gr100);padding:2px 7px;border-radius:10px;letter-spacing:.03em">✅ ENVIADO</span>'
+          + '<span style="font-size:9px;font-weight:700;color:var(--gr700);background:var(--gr100);padding:2px 7px;border-radius:10px;letter-spacing:.03em">'+ic('check',10)+' ENVIADO</span>'
           + '</div>';
       }).join('')
     + '</div></div>';
@@ -450,12 +471,12 @@ function renderAdjuntos(t, adjs) {
     var fid=a.fileId||'', u=a.url||'';
     var esInforme = a.tipo === 'informe_final';
     return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid '+(esInforme?'var(--gr500)':'var(--g100)')+';background:'+(esInforme?'var(--gr50)':'transparent')+';border-radius:var(--rad);margin-bottom:6px;font-size:12px">'
-      + '<span>'+(esInforme?'📄':'📎')+'</span>'
+      + '<span>'+(esInforme?ic('file'):ic('paperclip'))+'</span>'
       + ((fid||u)
           ? '<a href="#" onclick="abrirAdjunto(event,\''+fid+'\',\''+encodeURIComponent(a.nombre||'')+'\',\''+u+'\')" style="flex:1;color:var(--b600);text-decoration:underline;font-weight:500">'+esc(a.nombre)+'</a>'
           : '<span style="flex:1;color:var(--g900)">'+esc(a.nombre)+' <span style="color:var(--g400);font-weight:400">(sin vista previa disponible)</span></span>')
       + (esInforme
-          ? '<span style="font-size:9px;font-weight:700;color:var(--gr700);background:var(--gr100);padding:2px 7px;border-radius:10px;letter-spacing:.03em">✅ INFORME FINAL</span>'
+          ? '<span style="font-size:9px;font-weight:700;color:var(--gr700);background:var(--gr100);padding:2px 7px;border-radius:10px;letter-spacing:.03em">'+ic('check',10)+' INFORME FINAL</span>'
           : '<span style="font-size:10px;color:var(--g400)">'+esc(a.origen)+'</span>')
       + '</div>';
   }).join('');
@@ -480,15 +501,15 @@ function renderComentarios(t, coms, adjs) {
       archivosComentario = [{ nombre: c.archivo, fileId: adjFileId }];
     }
     return '<div style="border-left:2px solid '+(esOp?'var(--p500)':'var(--b500)')+';padding:7px 11px;margin-bottom:7px;background:'+(esOp?'var(--p50)':'var(--b50)')+';border-radius:0 var(--rad) var(--rad) 0">'
-      + '<div style="font-size:10px;font-weight:600;color:'+(esOp?'var(--p600)':'var(--b700)')+';margin-bottom:2px">'+(esOp?'⚙️ Operaciones':'💼 Comercial')+' · '+esc(c.usuario||'')+' · '+esc(c.ts||'')+'</div>'
+      + '<div style="font-size:10px;font-weight:600;color:'+(esOp?'var(--p600)':'var(--b700)')+';margin-bottom:2px">'+(esOp?ic('gear')+' Operaciones':ic('briefcase')+' Comercial')+' · '+esc(c.usuario||'')+' · '+esc(c.ts||'')+'</div>'
       + '<div style="font-size:12px;color:var(--g700)">'+esc(c.texto||'')+'</div>'
       + (archivosComentario.length
           ? '<div style="display:flex;flex-direction:column;gap:2px;margin-top:3px">'
               + archivosComentario.map(function(a){
                   return '<div style="font-size:11px">'
                     + (a.fileId
-                        ? '<a href="#" onclick="abrirAdjunto(event,\''+a.fileId+'\',\''+encodeURIComponent(a.nombre||'')+'\',\'\')" style="color:var(--b600);text-decoration:underline">📎 '+esc(a.nombre)+'</a>'
-                        : '📎 '+esc(a.nombre))
+                        ? '<a href="#" onclick="abrirAdjunto(event,\''+a.fileId+'\',\''+encodeURIComponent(a.nombre||'')+'\',\'\')" style="color:var(--b600);text-decoration:underline">'+ic('paperclip')+' '+esc(a.nombre)+'</a>'
+                        : ic('paperclip')+' '+esc(a.nombre))
                     + '</div>';
                 }).join('')
               + '</div>'
