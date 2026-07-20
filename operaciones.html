@@ -779,17 +779,17 @@ function renderKPIsSection(kpiData){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
       <div style="background:var(--w);border:1px solid var(--g200);border-radius:var(--rad-lg);padding:16px">
         <div style="font-size:13px;font-weight:600;color:var(--g700);margin-bottom:10px">Horas trabajadas por mes</div>
-        <div style="height:220px">${kpiData.horasMes.labels.length?'<canvas id="kpiChartHorasMes"></canvas>':'<p style="font-size:12px;color:var(--g400)">Sin datos para el rango seleccionado.</p>'}</div>
+        <div style="height:220px;position:relative">${kpiData.horasMes.labels.length?'<canvas id="kpiChartHorasMes"></canvas>':'<p style="font-size:12px;color:var(--g400)">Sin datos para el rango seleccionado.</p>'}</div>
       </div>
       <div style="background:var(--w);border:1px solid var(--g200);border-radius:var(--rad-lg);padding:16px">
         <div style="font-size:13px;font-weight:600;color:var(--g700);margin-bottom:10px">Tickets creados por mes</div>
-        <div style="height:220px">${kpiData.ticketsMes.labels.length?'<canvas id="kpiChartTicketsMes"></canvas>':'<p style="font-size:12px;color:var(--g400)">Sin datos para el rango seleccionado.</p>'}</div>
+        <div style="height:220px;position:relative">${kpiData.ticketsMes.labels.length?'<canvas id="kpiChartTicketsMes"></canvas>':'<p style="font-size:12px;color:var(--g400)">Sin datos para el rango seleccionado.</p>'}</div>
       </div>
     </div>
     <div style="background:var(--w);border:1px solid var(--g200);border-radius:var(--rad-lg);padding:16px;margin-top:16px">
       <div style="font-size:13px;font-weight:600;color:var(--g700);margin-bottom:2px">Horas trabajadas por cliente</div>
       <div style="font-size:11px;color:var(--g400);margin-bottom:10px">Respeta el rango de fechas, no el filtro de cliente de arriba.</div>
-      <div style="height:${alturaPorCliente}px">${kpiData.porCliente.labels.length?'<canvas id="kpiChartPorCliente"></canvas>':'<p style="font-size:12px;color:var(--g400)">Sin datos para el rango seleccionado.</p>'}</div>
+      <div style="height:${alturaPorCliente}px;position:relative">${kpiData.porCliente.labels.length?'<canvas id="kpiChartPorCliente"></canvas>':'<p style="font-size:12px;color:var(--g400)">Sin datos para el rango seleccionado.</p>'}</div>
     </div>
   `;
 }
@@ -799,8 +799,14 @@ function destroyKPICharts(){
 }
 function initKPICharts(dataHorasMes,dataTicketsMes,dataPorCliente){
   destroyKPICharts();
-  if (typeof Chart === 'undefined') return; // el CDN no cargó (ej. sin internet)
-
+  if (typeof Chart === 'undefined') {
+    // El CDN de Chart.js no cargó (sin internet, bloqueado por la red, etc.)
+    ['kpiChartHorasMes','kpiChartTicketsMes','kpiChartPorCliente'].forEach(function(id){
+      var c=document.getElementById(id);
+      if(c) c.outerHTML='<p style="font-size:12px;color:var(--r500)">No se pudo cargar la librería de gráficos (Chart.js). Revisá la conexión a internet o si algo la está bloqueando, y recargá la página.</p>';
+    });
+    return;
+  }
   var ctx1=document.getElementById('kpiChartHorasMes');
   if(ctx1 && dataHorasMes.labels.length){
     _kpiCharts.horasMes=new Chart(ctx1,{
